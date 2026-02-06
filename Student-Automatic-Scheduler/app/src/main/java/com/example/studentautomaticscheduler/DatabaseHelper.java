@@ -87,7 +87,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{dayFilter}
         );
 
-
         while (cursor.moveToNext()) {
 
             String day = cursor.getString(cursor.getColumnIndexOrThrow("day"));

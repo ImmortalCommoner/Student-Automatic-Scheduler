@@ -8,14 +8,15 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
-import java.util.ArrayList;
 import java.util.List;
 
-public class WeekFragment extends Fragment {
+import android.view.View;
+
+
+public class WeekFragment extends Fragment implements ScheduleAdapter.OnItemLongClick {
+
+    private List<ScheduleItem> list;
+    private ScheduleAdapter adapter;
 
     public WeekFragment() {
         super(R.layout.fragment_week);
@@ -41,10 +42,21 @@ public class WeekFragment extends Fragment {
         }
 
 
-        List<ScheduleItem> list = db.getWeek();
-
-
-        recycler.setAdapter(new ScheduleAdapter(list));
+        list = db.getWeek();
+        adapter = new ScheduleAdapter(list, this);
+        recycler.setAdapter(adapter);
     }
 
+    @Override
+    public void onDelete(int position) {
+        ScheduleItem item = list.get(position);
+        DatabaseHelper db = new DatabaseHelper(getContext());
+        db.getWritableDatabase().delete(
+                "schedule",
+                "day=? AND time=? AND subject=?",
+                new String[]{item.day, item.time, item.subject}
+        );
+        list.remove(position);
+        adapter.notifyItemRemoved(position);
+    }
 }

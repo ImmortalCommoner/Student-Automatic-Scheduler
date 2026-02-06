@@ -8,15 +8,15 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 
 
-public class MonthFragment extends Fragment {
+public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLongClick {
+
+    private List<ScheduleItem> list;
+    private ScheduleAdapter adapter;
 
     public MonthFragment() {
         super(R.layout.fragment_month);
@@ -42,9 +42,21 @@ public class MonthFragment extends Fragment {
         }
 
 
-        List<ScheduleItem> list = db.getAll();
+        list = db.getAll();
+        adapter = new ScheduleAdapter(list, this);
+        recycler.setAdapter(adapter);
+    }
 
-
-        recycler.setAdapter(new ScheduleAdapter(list));
+    @Override
+    public void onDelete(int position) {
+        ScheduleItem item = list.get(position);
+        DatabaseHelper db = new DatabaseHelper(getContext());
+        db.getWritableDatabase().delete(
+                "schedule",
+                "day=? AND time=? AND subject=?",
+                new String[]{item.day, item.time, item.subject}
+        );
+        list.remove(position);
+        adapter.notifyItemRemoved(position);
     }
 }
