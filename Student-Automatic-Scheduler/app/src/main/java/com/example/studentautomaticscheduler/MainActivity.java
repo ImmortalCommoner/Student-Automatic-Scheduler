@@ -10,6 +10,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.net.Uri;
+import android.util.Log;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_PDF = 100;
+    private static final String TAG = "PDF_PARSER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,9 +89,11 @@ public class MainActivity extends AppCompatActivity {
                         new com.tom_roush.pdfbox.text.PDFTextStripper();
                 String text = stripper.getText(document);
                 document.close();
+                
+                Log.d(TAG, "Extracted Text:\n" + text);
                 processText(text);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error parsing PDF", e);
             }
         }).start();
     }
@@ -100,77 +104,81 @@ public class MainActivity extends AppCompatActivity {
 
         String[] lines = text.split("\\r?\\n");
         String dayRegex = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)";
-        String timeRegex = "\\d{2}:\\d{2}[AP]M\\s*-\\s*\\d{2}:\\d{2}[AP]M";
+        String timeRegex = "(\\d{2}:\\d{2}[AP]M\\s*-\\s*\\d{2}:\\d{2}[AP]M)";
+        // Matches things like BSIT241A or PHYSED02R
+        String sectionRegex = "([A-Z]{2,}[0-9]{3,}[A-Z]?)";
 
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i].trim();
-            
-            // Detect Subject Code (e.g., CLDCOMP, INPROLA)
-            if (line.matches("^[A-Z0-9]{4,7}$") || line.matches("^[A-Z]{4,7}\\d$")) {
-                String subjectCode = line;
-                StringBuilder subjectDesc = new StringBuilder();
-                
-                int j = i + 1;
-                // Collect description until we find the Section (e.g., BSIT241A)
-                while (j < lines.length && !lines[j].trim().matches("^[A-Z]{2,}[0-9]{3,}[A-Z]?.*")) {
-                    subjectDesc.append(lines[j].trim()).append(" ");
-                    j++;
-                }
-                
-                if (j < lines.length) {
-                    String sectionLine = lines[j].trim();
-                    String section = sectionLine.split("\\s+")[0];
-                    
-                    // Extract days
-                    List<String> days = new ArrayList<>();
-                    Matcher dayMatcher = Pattern.compile(dayRegex).matcher(sectionLine);
-                    if (dayMatcher.find()) days.add(dayMatcher.group());
-                    
-                    j++;
-                    while (j < lines.length && Pattern.compile(dayRegex).matcher(lines[j]).find()) {
-                        days.add(lines[j].trim());
-                        j++;
-                    }
-                    
-                    // Extract times
-                    List<String> times = new ArrayList<>();
-                    while (j < lines.length && Pattern.compile(timeRegex).matcher(lines[j]).find()) {
-                        times.add(lines[j].trim());
-                        j++;
-                    }
-                    
-                    // Extract rooms - usually follows times
-                    List<String> rooms = new ArrayList<>();
-                    for (int k = 0; k < days.size(); k++) {
-                        if (j < lines.length) {
-                            rooms.add(lines[j].trim());
-                            j++;
-                        }
-                    }
-                    
-                    // Extract Instructor - line usually ends with "Enrolled"
-                    String instructor = "TBA";
-                    while (j < lines.length) {
-                        String potentialInstructor = lines[j].trim();
-                        if (potentialInstructor.contains("Enrolled")) {
-                            instructor = potentialInstructor.split("Enrolled")[0].trim();
-                            break;
-                        }
-                        j++;
-                    }
-                    
-                    // Insert each meeting into DB
-                    for (int k = 0; k < days.size(); k++) {
-                        String d = days.get(k);
-                        String t = (k < times.size()) ? times.get(k) : (times.size() > 0 ? times.get(0) : "");
-                        String r = (k < rooms.size()) ? rooms.get(k) : (rooms.size() > 0 ? rooms.get(0) : "");
-                        db.insertSchedule(shortDay(d), t, subjectCode + " - " + subjectDesc.toString().trim(), section, r, instructor);
-                    }
-                    i = j; // Advance main loop
+        String currentSubject = "";
+        String currentSection = "";
+        List<String> currentDays = new ArrayList<>();
+        List<String> currentTimes = new ArrayList<>();
+        List<String> currentRooms = new ArrayList<>();
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("Student") || line.startsWith("TOTAL")) continue;
+
+            // 1. Detect Subject Header (e.g., CLDCOMP CLOUD COMPUTING)
+            // Typically starts with 4+ uppercase letters
+            if (line.matches("^[A-Z]{4,}.*") && !line.contains(" - ")) {
+                // If we were already tracking a subject, this is a new one, but wait... 
+                // In this PDF, data for one subject can span many lines.
+                // We'll reset only if we see a clear new subject code.
+                if (line.split("\\s+")[0].matches("^[A-Z0-9]{4,8}$")) {
+                    currentSubject = line;
                 }
             }
+
+            // 2. Detect Section
+            Matcher sectionMatcher = Pattern.compile(sectionRegex).matcher(line);
+            if (sectionMatcher.find()) {
+                currentSection = sectionMatcher.group(1);
+            }
+
+            // 3. Detect Days
+            Matcher dayMatcher = Pattern.compile(dayRegex).matcher(line);
+            while (dayMatcher.find()) {
+                currentDays.add(dayMatcher.group(1));
+            }
+
+            // 4. Detect Times
+            Matcher timeMatcher = Pattern.compile(timeRegex).matcher(line);
+            while (timeMatcher.find()) {
+                currentTimes.add(timeMatcher.group(1));
+            }
+
+            // 5. Detect Room (Heuristic: If line contains Day/Time, the next part or next line is often Room)
+            // This is tricky. Let's look for specific room patterns or strings like "ComLab" or "Room"
+            if (line.contains("Lab") || line.contains("Room") || line.matches("^[A-Z]-\\d+$") || line.matches("^HSSH.*")) {
+                currentRooms.add(line);
+            }
+
+            // 6. Detect Instructor & End of Block
+            if (line.contains("Enrolled")) {
+                String instructor = line.split("Enrolled")[0].trim();
+                
+                // We have reached the end of a subject block. Save all collected meetings.
+                int count = Math.max(currentDays.size(), currentTimes.size());
+                for (int m = 0; m < count; m++) {
+                    String d = (m < currentDays.size()) ? currentDays.get(m) : "N/A";
+                    String t = (m < currentTimes.size()) ? currentTimes.get(m) : "N/A";
+                    String r = (m < currentRooms.size()) ? currentRooms.get(m) : "TBA";
+                    
+                    db.insertSchedule(shortDay(d), t, currentSubject, currentSection, r, instructor);
+                }
+
+                // Reset for next subject
+                currentDays.clear();
+                currentTimes.clear();
+                currentRooms.clear();
+                currentSection = "";
+            }
         }
-        runOnUiThread(this::recreate);
+        
+        runOnUiThread(() -> {
+            Toast.makeText(this, "Schedule Updated Successfully!", Toast.LENGTH_SHORT).show();
+            recreate();
+        });
     }
 
     private String shortDay(String day) {
