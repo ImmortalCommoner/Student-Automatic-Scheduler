@@ -1,17 +1,13 @@
 package com.example.studentautomaticscheduler;
 
 import android.os.Bundle;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
-
 import android.view.View;
-
 
 public class WeekFragment extends Fragment implements ScheduleAdapter.OnItemLongClick {
 
@@ -27,22 +23,11 @@ public class WeekFragment extends Fragment implements ScheduleAdapter.OnItemLong
         super.onViewCreated(view, savedInstanceState);
 
         RecyclerView recycler = view.findViewById(R.id.recyclerSchedule);
-
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
 
         DatabaseHelper db = new DatabaseHelper(getContext());
 
-
-        // TEMP: insert sample data only first run
-        if (db.getAll().isEmpty()) {
-            db.insert("Mon", "8:00-9:30", "Mathematics");
-            db.insert("Mon", "10:00-11:30", "Programming");
-            db.insert("Tue", "1:00-3:00", "Database");
-            db.insert("Wed", "9:00-11:00", "Networking");
-        }
-
-
-        list = db.getWeek();
+        list = db.getAllSchedules(); // For now, Week view shows everything
         adapter = new ScheduleAdapter(list, this);
         recycler.setAdapter(adapter);
     }
@@ -52,7 +37,7 @@ public class WeekFragment extends Fragment implements ScheduleAdapter.OnItemLong
         ScheduleItem item = list.get(position);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
-                "schedule",
+                DatabaseHelper.TABLE_SCHEDULE,
                 "day=? AND time=? AND subject=?",
                 new String[]{item.day, item.time, item.subject}
         );

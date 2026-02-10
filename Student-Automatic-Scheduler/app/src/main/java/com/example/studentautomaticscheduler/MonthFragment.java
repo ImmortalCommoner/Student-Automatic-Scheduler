@@ -1,22 +1,25 @@
 package com.example.studentautomaticscheduler;
 
 import android.os.Bundle;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
-
 import android.view.View;
-
+import android.widget.CalendarView;
+import android.widget.TextView;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
 
 public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLongClick {
 
     private List<ScheduleItem> list;
     private ScheduleAdapter adapter;
+    private RecyclerView recycler;
+    private TextView txtSelectedDate;
 
     public MonthFragment() {
         super(R.layout.fragment_month);
@@ -26,23 +29,30 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLon
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        RecyclerView recycler = view.findViewById(R.id.recyclerSchedule);
-
+        recycler = view.findViewById(R.id.recyclerSchedule);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
+        
+        txtSelectedDate = view.findViewById(R.id.txtSelectedDate);
+        CalendarView calendarView = view.findViewById(R.id.calendarView);
 
         DatabaseHelper db = new DatabaseHelper(getContext());
 
+        calendarView.setOnDateChangeListener((view1, year, month, dayOfMonth) -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(year, month, dayOfMonth);
+            String dayOfWeek = new SimpleDateFormat("EEE", Locale.US).format(calendar.getTime());
+            String fullDate = new SimpleDateFormat("MMMM dd, yyyy", Locale.US).format(calendar.getTime());
+            
+            txtSelectedDate.setText("Schedules for " + fullDate + " (" + dayOfWeek + "):");
+            
+            list = db.getSchedulesByDay(dayOfWeek);
+            adapter = new ScheduleAdapter(list, this);
+            recycler.setAdapter(adapter);
+        });
 
-        // TEMP: insert sample data only first run
-        if (db.getAll().isEmpty()) {
-            db.insert("Mon", "8:00-9:30", "Mathematics");
-            db.insert("Mon", "10:00-11:30", "Programming");
-            db.insert("Tue", "1:00-3:00", "Database");
-            db.insert("Wed", "9:00-11:00", "Networking");
-        }
-
-
-        list = db.getAll();
+        // Initialize with today's date
+        String today = new SimpleDateFormat("EEE", Locale.US).format(Calendar.getInstance().getTime());
+        list = db.getSchedulesByDay(today);
         adapter = new ScheduleAdapter(list, this);
         recycler.setAdapter(adapter);
     }
@@ -52,7 +62,7 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLon
         ScheduleItem item = list.get(position);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
-                "schedule",
+                DatabaseHelper.TABLE_SCHEDULE,
                 "day=? AND time=? AND subject=?",
                 new String[]{item.day, item.time, item.subject}
         );

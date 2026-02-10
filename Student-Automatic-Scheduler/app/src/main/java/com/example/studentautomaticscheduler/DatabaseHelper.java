@@ -11,10 +11,11 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    private static final String DB_NAME = "schedule.db";
-    private static final int DB_VERSION = 1;
+    private static final String DB_NAME = "scheduler.db";
+    private static final int DB_VERSION = 4; // Upgraded for instructor
 
-    public static final String TABLE = "schedule";
+    public static final String TABLE_SCHEDULE = "schedule";
+    public static final String TABLE_USERS = "users";
 
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -22,91 +23,104 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-
         db.execSQL(
-                "CREATE TABLE " + TABLE + " (" +
+                "CREATE TABLE " + TABLE_SCHEDULE + " (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                         "day TEXT," +
                         "time TEXT," +
-                        "subject TEXT)"
+                        "subject TEXT," +
+                        "section TEXT," +
+                        "room TEXT," +
+                        "instructor TEXT)"
+        );
+
+        db.execSQL(
+                "CREATE TABLE " + TABLE_USERS + " (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "username TEXT UNIQUE," +
+                        "password TEXT)"
         );
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE);
-        onCreate(db);
+        if (oldVersion < 2) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_USERS + " (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "username TEXT UNIQUE," +
+                    "password TEXT)");
+        }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN section TEXT");
+            db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN room TEXT");
+        }
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN instructor TEXT");
+        }
     }
 
-    public void insert(String day, String time, String subject) {
-
+    public void insertSchedule(String day, String time, String subject, String section, String room, String instructor) {
         SQLiteDatabase db = this.getWritableDatabase();
-
         ContentValues cv = new ContentValues();
         cv.put("day", day);
         cv.put("time", time);
         cv.put("subject", subject);
-
-        db.insert(TABLE, null, cv);
+        cv.put("section", section);
+        cv.put("room", room);
+        cv.put("instructor", instructor);
+        db.insert(TABLE_SCHEDULE, null, cv);
     }
 
-    public List<ScheduleItem> getAll() {
-
+    public List<ScheduleItem> getAllSchedules() {
         List<ScheduleItem> list = new ArrayList<>();
-
         SQLiteDatabase db = this.getReadableDatabase();
-
-        Cursor cursor = db.rawQuery(
-                "SELECT * FROM " + TABLE + " ORDER BY time ASC",
-                null
-        );
-
-
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SCHEDULE + " ORDER BY day, time ASC", null);
         while (cursor.moveToNext()) {
-
-            String day = cursor.getString(cursor.getColumnIndexOrThrow("day"));
-            String time = cursor.getString(cursor.getColumnIndexOrThrow("time"));
-            String subject = cursor.getString(cursor.getColumnIndexOrThrow("subject"));
-
-            list.add(new ScheduleItem(day, time, subject));
+            list.add(new ScheduleItem(
+                    cursor.getString(cursor.getColumnIndexOrThrow("day")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("time")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("subject")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("section")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("room")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("instructor"))
+            ));
         }
-
         cursor.close();
-
         return list;
     }
 
-    public List<ScheduleItem> getByDay(String dayFilter) {
-
+    public List<ScheduleItem> getSchedulesByDay(String dayFilter) {
         List<ScheduleItem> list = new ArrayList<>();
-
         SQLiteDatabase db = this.getReadableDatabase();
-
-        Cursor cursor = db.rawQuery(
-                "SELECT * FROM " + TABLE + " WHERE day=? ORDER BY time ASC",
-                new String[]{dayFilter}
-        );
-
+        Cursor cursor = db.query(TABLE_SCHEDULE, null, "day=?", new String[]{dayFilter}, null, null, "time ASC");
         while (cursor.moveToNext()) {
-
-            String day = cursor.getString(cursor.getColumnIndexOrThrow("day"));
-            String time = cursor.getString(cursor.getColumnIndexOrThrow("time"));
-            String subject = cursor.getString(cursor.getColumnIndexOrThrow("subject"));
-
-            list.add(new ScheduleItem(day, time, subject));
+            list.add(new ScheduleItem(
+                    cursor.getString(cursor.getColumnIndexOrThrow("day")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("time")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("subject")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("section")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("room")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("instructor"))
+            ));
         }
-
         cursor.close();
-
         return list;
     }
 
-    public List<ScheduleItem> getWeek() {
-        return getAll();
+    public boolean registerUser(String username, String password) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("username", username);
+        cv.put("password", password);
+        long result = db.insert(TABLE_USERS, null, cv);
+        return result != -1;
     }
 
+    public boolean checkUser(String username, String password) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_USERS, null, "username=? AND password=?", new String[]{username, password}, null, null, null);
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
 }
-
-
-
-
