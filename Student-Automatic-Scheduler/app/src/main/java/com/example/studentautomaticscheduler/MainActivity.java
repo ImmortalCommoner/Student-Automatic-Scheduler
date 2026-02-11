@@ -105,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
         String[] lines = text.split("\\r?\\n");
         String dayRegex = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)";
         String timeRegex = "(\\d{2}:\\d{2}[AP]M\\s*-\\s*\\d{2}:\\d{2}[AP]M)";
-        // Matches things like BSIT241A or PHYSED02R
         String sectionRegex = "([A-Z]{2,}[0-9]{3,}[A-Z]?)";
 
         String currentSubject = "";
@@ -118,46 +117,34 @@ public class MainActivity extends AppCompatActivity {
             line = line.trim();
             if (line.isEmpty() || line.startsWith("Student") || line.startsWith("TOTAL")) continue;
 
-            // 1. Detect Subject Header (e.g., CLDCOMP CLOUD COMPUTING)
-            // Typically starts with 4+ uppercase letters
             if (line.matches("^[A-Z]{4,}.*") && !line.contains(" - ")) {
-                // If we were already tracking a subject, this is a new one, but wait... 
-                // In this PDF, data for one subject can span many lines.
-                // We'll reset only if we see a clear new subject code.
                 if (line.split("\\s+")[0].matches("^[A-Z0-9]{4,8}$")) {
                     currentSubject = line;
                 }
             }
 
-            // 2. Detect Section
             Matcher sectionMatcher = Pattern.compile(sectionRegex).matcher(line);
             if (sectionMatcher.find()) {
                 currentSection = sectionMatcher.group(1);
             }
 
-            // 3. Detect Days
             Matcher dayMatcher = Pattern.compile(dayRegex).matcher(line);
             while (dayMatcher.find()) {
                 currentDays.add(dayMatcher.group(1));
             }
 
-            // 4. Detect Times
             Matcher timeMatcher = Pattern.compile(timeRegex).matcher(line);
             while (timeMatcher.find()) {
                 currentTimes.add(timeMatcher.group(1));
             }
 
-            // 5. Detect Room (Heuristic: If line contains Day/Time, the next part or next line is often Room)
-            // This is tricky. Let's look for specific room patterns or strings like "ComLab" or "Room"
             if (line.contains("Lab") || line.contains("Room") || line.matches("^[A-Z]-\\d+$") || line.matches("^HSSH.*")) {
                 currentRooms.add(line);
             }
 
-            // 6. Detect Instructor & End of Block
             if (line.contains("Enrolled")) {
                 String instructor = line.split("Enrolled")[0].trim();
                 
-                // We have reached the end of a subject block. Save all collected meetings.
                 int count = Math.max(currentDays.size(), currentTimes.size());
                 for (int m = 0; m < count; m++) {
                     String d = (m < currentDays.size()) ? currentDays.get(m) : "N/A";
@@ -167,7 +154,6 @@ public class MainActivity extends AppCompatActivity {
                     db.insertSchedule(shortDay(d), t, currentSubject, currentSection, r, instructor);
                 }
 
-                // Reset for next subject
                 currentDays.clear();
                 currentTimes.clear();
                 currentRooms.clear();
@@ -175,8 +161,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         
+        // After processing, schedule notifications
+        NotificationHelper.scheduleClassReminders(this);
+        
         runOnUiThread(() -> {
-            Toast.makeText(this, "Schedule Updated Successfully!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Schedule Updated & Notifications Set!", Toast.LENGTH_SHORT).show();
             recreate();
         });
     }

@@ -1,6 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.recyclerview.widget.RecyclerView
+<HorizontalScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/recyclerSchedule"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"/>
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+
+        <TableLayout
+            android:id="@+id/tableSchedule"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*"
+            android:padding="8dp">
+
+            <TableRow
+                android:background="#DDDDDD"
+                android:padding="4dp">
+                <TextView
+                    android:text="Time"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="100dp"/>
+                <TextView
+                    android:text="Mon"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+                <TextView
+                    android:text="Tue"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+                <TextView
+                    android:text="Wed"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+                <TextView
+                    android:text="Thu"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+                <TextView
+                    android:text="Fri"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+                <TextView
+                    android:text="Sat"
+                    android:textStyle="bold"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:minWidth="120dp"/>
+            </TableRow>
+
+            <!-- Dynamic rows will be added here -->
+
+        </TableLayout>
+    </ScrollView>
+</HorizontalScrollView>
