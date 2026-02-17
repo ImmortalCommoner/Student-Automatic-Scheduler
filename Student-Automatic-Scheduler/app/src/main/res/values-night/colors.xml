@@ -2,20 +2,22 @@
 <resources>
 
     <!-- ===== TEXT ===== -->
-    <color name="text_primary">#111111</color>
-    <color name="text_secondary">#555555</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#CCCCCC</color>
 
     <!-- ===== INPUTS ===== -->
     <color name="input_text">@color/text_primary</color>
-    <color name="input_hint">#777777</color>
-    <color name="input_line">#B0B0B0</color>
+    <color name="input_hint">#AAAAAA</color>
+    <color name="input_line">#666666</color>
 
     <!-- ===== BUTTONS ===== -->
     <color name="button_text">#FFFFFF</color>
     <color name="button_bg">#2F3981</color>
 
     <!-- ===== SURFACES ===== -->
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#EAEAEA</color>
+    <color name="surface">#121212</color>
+    <color name="surface_variant">#1E1E1E</color>
 
 </resources>
+
+

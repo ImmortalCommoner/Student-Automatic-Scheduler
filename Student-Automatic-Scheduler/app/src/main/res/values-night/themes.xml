@@ -1,7 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.StudentAutomaticScheduler" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+
+    <!-- Base application theme (Dark Mode) -->
+    <style name="Base.Theme.StudentAutomaticScheduler"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Global text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Buttons -->
+        <item name="colorPrimary">@color/button_bg</item>
+        <item name="colorOnPrimary">@color/button_text</item>
+
     </style>
+
+    <style name="Theme.StudentAutomaticScheduler"
+        parent="Base.Theme.StudentAutomaticScheduler" />
+
 </resources>

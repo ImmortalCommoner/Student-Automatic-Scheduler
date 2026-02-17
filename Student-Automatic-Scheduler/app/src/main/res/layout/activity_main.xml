@@ -7,7 +7,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@drawable/bg_main">
+
+
 
     <!-- ======== Header ======== -->
     <LinearLayout
@@ -27,15 +30,18 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Welcome, Guest"
-            android:textSize="18sp" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="25sp"
+            android:textColor="@color/text_primary"/>
 
         <ImageButton
             android:id="@+id/btnSettings"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:background="@null"
+            android:backgroundTint="#f5cb1d"
             android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences"
-            android:background="@null" />
+            android:src="@android:drawable/ic_menu_preferences" />
 
     </LinearLayout>
 
@@ -55,18 +61,23 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:backgroundTint="#2f3981"
             android:text="Month" />
+
         <Button
             android:id="@+id/btnWeek"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:backgroundTint="#2f3981"
             android:text="Week" />
+
         <Button
             android:id="@+id/btnDay"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:backgroundTint="#2f3981"
             android:text="Day" />
 
     </LinearLayout>
@@ -89,9 +100,10 @@
         android:id="@+id/btnUploadSchedule"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:backgroundTint="#2f3981"
         android:text="Upload / Update Schedule"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

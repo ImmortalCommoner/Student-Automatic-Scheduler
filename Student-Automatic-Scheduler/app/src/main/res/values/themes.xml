@@ -1,9 +1,23 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.StudentAutomaticScheduler" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- Base application theme -->
+    <style name="Base.Theme.StudentAutomaticScheduler"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Buttons -->
+        <item name="colorPrimary">@color/button_bg</item>
+        <item name="colorOnPrimary">@color/button_text</item>
+
+        <!-- Optional default background -->
+        <!-- <item name="android:windowBackground">@drawable/bg_main</item> -->
+
     </style>
 
-    <style name="Theme.StudentAutomaticScheduler" parent="Base.Theme.StudentAutomaticScheduler" />
+    <style name="Theme.StudentAutomaticScheduler"
+        parent="Base.Theme.StudentAutomaticScheduler" />
+
 </resources>
