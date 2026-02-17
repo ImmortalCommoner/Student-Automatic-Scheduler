@@ -115,7 +115,15 @@ public class MainActivity extends AppCompatActivity {
 
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty() || line.startsWith("Student") || line.startsWith("TOTAL")) continue;
+            if (line.equalsIgnoreCase("Subject") ||
+                    line.equalsIgnoreCase("Code") ||
+                    line.contains("Subject Description") ||
+                    line.contains("Section Day") ||
+                    line.contains("Schedule Room") ||
+                    line.contains("Instructor Status") ||
+                    line.contains("Units")) {
+                continue;
+            }
 
             if (line.matches("^[A-Z]{4,}.*") && !line.contains(" - ")) {
                 if (line.split("\\s+")[0].matches("^[A-Z0-9]{4,8}$")) {
@@ -138,11 +146,16 @@ public class MainActivity extends AppCompatActivity {
                 currentTimes.add(timeMatcher.group(1));
             }
 
-            if (line.contains("Lab") || line.contains("Room") || line.matches("^[A-Z]-\\d+$") || line.matches("^HSSH.*")) {
+            if (line.matches(".*Lab.*") ||
+                    line.matches(".*ComLab.*") ||
+                    line.matches("PE Room \\d+") ||
+                    line.matches("HSSH-\\d+") ||
+                    line.matches("V-\\d+")) {
                 currentRooms.add(line);
             }
 
-            if (line.contains("Enrolled")) {
+
+            if (line.matches(".*Enrolled.*\\d+\\.\\d+")) {
                 String instructor = line.split("Enrolled")[0].trim();
                 
                 int count = Math.max(currentDays.size(), currentTimes.size());
