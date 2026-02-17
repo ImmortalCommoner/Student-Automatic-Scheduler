@@ -6,7 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/main"
+    android:background="@drawable/bg_settings"
     tools:context=".Settings">
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,7 +22,8 @@
             android:text="Customize View"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="8dp"
+            android:textColor="@color/text_primary"/>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"

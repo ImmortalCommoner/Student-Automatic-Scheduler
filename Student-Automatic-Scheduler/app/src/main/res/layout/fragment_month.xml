@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@drawable/bg_month">
 
     <CalendarView
         android:id="@+id/calendarView"
@@ -17,7 +18,8 @@
         android:padding="8dp"
         android:text="Schedules for today:"
         android:textStyle="bold"
-        android:background="#EEEEEE"/>
+        android:background="#EEEEEE"
+        android:textColor="@color/text_primary"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerSchedule"
