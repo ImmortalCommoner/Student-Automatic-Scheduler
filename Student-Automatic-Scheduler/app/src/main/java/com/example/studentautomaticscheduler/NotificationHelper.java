@@ -26,6 +26,9 @@ public class NotificationHelper {
     }
 
     private static void scheduleNotification(Context context, AlarmManager alarmManager, ScheduleItem item) {
+        if (item.time == null || item.time.equals("N/A") || !item.time.contains("-")) return;
+        if (item.day == null || item.day.equals("N/A")) return;
+
         // time format: "11:00AM - 01:00PM"
         String startTimeStr = item.time.split("-")[0].trim();
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mma", Locale.US);

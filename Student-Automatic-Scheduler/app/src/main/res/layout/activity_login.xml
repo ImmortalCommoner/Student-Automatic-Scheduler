@@ -14,7 +14,7 @@
         android:layout_marginBottom="32dp"
         android:gravity="center"
         android:text="Student Automatic Scheduler"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        android:textColor="@color/text_primary"
         android:textSize="24sp"
         android:textStyle="bold" />
 
@@ -24,8 +24,9 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
         android:hint="Username"
-        android:inputType="textPersonName"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/input_hint"
+        android:inputType="textPersonName" />
 
     <EditText
         android:id="@+id/etPassword"
@@ -33,16 +34,17 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:hint="Password"
-        android:inputType="textPassword"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/input_hint"
+        android:inputType="textPassword" />
 
     <Button
         android:id="@+id/btnLogin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:backgroundTint="#2f3981"
+        android:backgroundTint="@color/button_bg"
         android:text="Login"
-        android:textColor="#FFFFFF"/>
+        android:textColor="@color/button_text"/>
 
     <TextView
         android:id="@+id/txtSignUp"
@@ -50,11 +52,10 @@
         android:layout_height="wrap_content"
         android:text="Don’t have an account? Sign up"
         android:textSize="14sp"
-        android:textColor="#000000"
+        android:textColor="@color/text_primary"
         android:layout_marginTop="16dp"
         android:clickable="true"
         android:focusable="true"
         android:padding="8dp" />
-
 
 </LinearLayout>

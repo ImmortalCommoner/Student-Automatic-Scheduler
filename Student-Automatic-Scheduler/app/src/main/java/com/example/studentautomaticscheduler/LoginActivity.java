@@ -7,7 +7,6 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -18,10 +17,14 @@ import androidx.core.content.ContextCompat;
 
 public class LoginActivity extends AppCompatActivity {
 
+    private DatabaseHelper dbHelper;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        dbHelper = new DatabaseHelper(this);
 
         EditText etUsername = findViewById(R.id.etUsername);
         EditText etPassword = findViewById(R.id.etPassword);
@@ -29,22 +32,24 @@ public class LoginActivity extends AppCompatActivity {
         TextView txtSignUp = findViewById(R.id.txtSignUp);
 
         // ---- LOGIN BUTTON ----
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String user = etUsername.getText().toString().trim();
-                String pass = etPassword.getText().toString().trim();
+        btnLogin.setOnClickListener(v -> {
+            String user = etUsername.getText().toString().trim();
+            String pass = etPassword.getText().toString().trim();
 
-                if (user.equals("User") && pass.equals("Passwordkey")) {
-                    Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+            if (user.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(LoginActivity.this, "Please enter username and password", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                    intent.putExtra("USERNAME", user);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    Toast.makeText(LoginActivity.this, "Invalid credentials", Toast.LENGTH_SHORT).show();
-                }
+            if (dbHelper.checkUser(user, pass)) {
+                Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.putExtra("USERNAME", user);
+                startActivity(intent);
+                finish();
+            } else {
+                Toast.makeText(LoginActivity.this, "Invalid credentials", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -75,11 +80,8 @@ public class LoginActivity extends AppCompatActivity {
 
         txtSignUp.setText(span);
 
-        txtSignUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
-            }
-        });
+        txtSignUp.setOnClickListener(v ->
+                startActivity(new Intent(LoginActivity.this, SignUpActivity.class))
+        );
     }
 }

@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import android.view.View;
+import android.util.TypedValue;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -45,7 +46,7 @@ public class WeekFragment extends Fragment {
                 "06:00PM - 07:00PM", "07:00PM - 08:00PM", "08:00PM - 09:00PM"
         };
 
-        String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mma", Locale.US);
 
         // Map to store which slot contains which class
@@ -116,9 +117,11 @@ public class WeekFragment extends Fragment {
         if (isHeader) {
             tv.setBackgroundColor(Color.parseColor("#F5F5F5"));
             tv.setTypeface(null, Typeface.BOLD);
-            tv.setMinWidth(300);
+            int minWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, getResources().getDisplayMetrics());
+            tv.setMinWidth(minWidth);
         } else {
-            tv.setMinWidth(350);
+            int minWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 120, getResources().getDisplayMetrics());
+            tv.setMinWidth(minWidth);
         }
 
         tv.setBackgroundResource(R.drawable.cell_border);

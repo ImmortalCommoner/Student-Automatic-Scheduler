@@ -9,7 +9,8 @@
     <CalendarView
         android:id="@+id/calendarView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:theme="@style/Theme.StudentAutomaticScheduler"/>
 
     <TextView
         android:id="@+id/txtSelectedDate"
@@ -18,7 +19,7 @@
         android:padding="8dp"
         android:text="Schedules for today:"
         android:textStyle="bold"
-        android:background="#EEEEEE"
+        android:background="@color/surface_variant"
         android:textColor="@color/text_primary"/>
 
     <androidx.recyclerview.widget.RecyclerView

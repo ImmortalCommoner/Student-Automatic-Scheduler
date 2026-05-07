@@ -10,8 +10,6 @@
     android:padding="16dp"
     android:background="@drawable/bg_main">
 
-
-
     <!-- ======== Header ======== -->
     <LinearLayout
         android:id="@+id/header"
@@ -39,9 +37,9 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="@null"
-            android:backgroundTint="#f5cb1d"
             android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences" />
+            android:src="@android:drawable/ic_menu_preferences"
+            app:tint="@color/text_primary" />
 
     </LinearLayout>
 
@@ -61,29 +59,31 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:backgroundTint="#2f3981"
-            android:text="Month" />
+            android:backgroundTint="@color/button_bg"
+            android:text="Month"
+            android:textColor="@color/button_text"/>
 
         <Button
             android:id="@+id/btnWeek"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:backgroundTint="#2f3981"
-            android:text="Week" />
+            android:backgroundTint="@color/button_bg"
+            android:text="Week"
+            android:textColor="@color/button_text"/>
 
         <Button
             android:id="@+id/btnDay"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:backgroundTint="#2f3981"
-            android:text="Day" />
+            android:backgroundTint="@color/button_bg"
+            android:text="Day"
+            android:textColor="@color/button_text"/>
 
     </LinearLayout>
 
     <!-- === Fragment Container (Body) === -->
-    <!-- This is where the fragments will be contained -->
     <FrameLayout
         android:id="@+id/fragmentContainer"
         android:layout_width="0dp"
@@ -100,8 +100,9 @@
         android:id="@+id/btnUploadSchedule"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:backgroundTint="#2f3981"
+        android:backgroundTint="@color/button_bg"
         android:text="Upload / Update Schedule"
+        android:textColor="@color/button_text"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

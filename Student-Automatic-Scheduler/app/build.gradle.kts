@@ -45,5 +45,13 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
+    // ML Kit & CameraX
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
+    implementation(libs.camera.extensions)
+
 
 }

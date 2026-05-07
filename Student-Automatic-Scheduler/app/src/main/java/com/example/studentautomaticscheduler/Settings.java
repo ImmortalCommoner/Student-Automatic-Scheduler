@@ -45,6 +45,7 @@ public class Settings extends AppCompatActivity {
         SwitchCompat switchDarkMode = findViewById(R.id.switchDarkMode);
         boolean isDarkMode = prefs.getBoolean("dark_mode", false);
         switchDarkMode.setChecked(isDarkMode);
+        
         switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("dark_mode", isChecked).apply();
             if (isChecked) {
@@ -112,8 +113,6 @@ public class Settings extends AppCompatActivity {
                     .setTitle("Log Out")
                     .setMessage("Are you sure you want to log out?")
                     .setPositiveButton("Yes", (dialog, which) -> {
-                        // For now, since there's no auth system, we just go back to what would be a start screen or close
-                        // If you add a Login activity later, navigate to it here.
                         finishAffinity(); // Close all activities
                     })
                     .setNegativeButton("No", null)

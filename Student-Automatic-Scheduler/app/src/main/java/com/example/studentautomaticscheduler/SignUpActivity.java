@@ -1,7 +1,6 @@
 package com.example.studentautomaticscheduler;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -12,10 +11,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class SignUpActivity extends AppCompatActivity {
 
+    private DatabaseHelper dbHelper;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
+
+        dbHelper = new DatabaseHelper(this);
 
         EditText etUsername = findViewById(R.id.etUsername);
         EditText etEmail    = findViewById(R.id.etEmail);
@@ -33,19 +36,17 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
-            // Save account (temporary)
-            SharedPreferences prefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
-            prefs.edit()
-                    .putString("USERNAME", username)
-                    .putString("EMAIL", email)
-                    .putString("PASSWORD", password)
-                    .apply();
+            // Register user in database
+            boolean success = dbHelper.registerUser(username, password);
 
-            Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
-
-            // Go back to Login
-            startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
-            finish();
+            if (success) {
+                Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
+                // Go back to Login
+                startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
+                finish();
+            } else {
+                Toast.makeText(this, "Registration failed (Username might already exist)", Toast.LENGTH_SHORT).show();
+            }
         });
 
         // Already have an account? Login
