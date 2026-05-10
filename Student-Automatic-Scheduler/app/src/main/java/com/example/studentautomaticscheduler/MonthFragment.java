@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLongClick {
+public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemActionListener {
 
     private List<ScheduleItem> list;
     private ScheduleAdapter adapter;
@@ -58,15 +58,49 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemLon
     }
 
     @Override
-    public void onDelete(int position) {
+    public void onItemAction(int position, String action) {
+        if ("PROMPT".equals(action)) {
+            showActionDialog(position);
+        }
+    }
+
+    private void showActionDialog(int position) {
+        String[] options = {"Edit", "Delete"};
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Schedule Action")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        editItem(position);
+                    } else if (which == 1) {
+                        deleteItem(position);
+                    }
+                })
+                .show();
+    }
+
+    private void editItem(int position) {
+        ScheduleItem item = list.get(position);
+        java.util.ArrayList<ScheduleItem> editList = new java.util.ArrayList<>();
+        editList.add(item);
+        
+        android.content.Intent intent = new android.content.Intent(getContext(), EditScheduleActivity.class);
+        intent.putExtra("SCHEDULE_ITEMS", editList);
+        intent.putExtra("SINGLE_EDIT_MODE", true); // Flag to maybe handle saving differently
+        startActivity(intent);
+    }
+
+    private void deleteItem(int position) {
         ScheduleItem item = list.get(position);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
                 DatabaseHelper.TABLE_SCHEDULE,
-                "day=? AND time=? AND subject=?",
-                new String[]{item.day, item.time, item.subject}
+                "id=?",
+                new String[]{String.valueOf(item.id)}
         );
         list.remove(position);
         adapter.notifyItemRemoved(position);
+        
+        // Refresh notifications
+        NotificationHelper.scheduleClassReminders(requireContext());
     }
 }

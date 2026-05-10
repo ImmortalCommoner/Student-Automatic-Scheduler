@@ -1,39 +1,32 @@
 package com.example.studentautomaticscheduler;
 
-import android.os.Bundle;
-import androidx.fragment.app.Fragment;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import android.net.Uri;
-import android.util.Log;
-import android.provider.MediaStore;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
+import androidx.fragment.app.Fragment;
 
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.text.TextRecognition;
-import com.google.mlkit.vision.text.TextRecognizer;
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
+
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_PDF = 100;
-    private static final int PICK_IMAGE = 101;
-    private static final int CAPTURE_OCR = 102;
     private static final int CAMERA_PERMISSION_CODE = 103;
     private static final int NOTIFICATION_PERMISSION_CODE = 104;
     private static final String TAG = "PDF_PARSER";
@@ -69,9 +62,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Button btnUpload = findViewById(R.id.btnUploadSchedule);
-        btnUpload.setOnClickListener(v -> {
-            showUploadOptions();
-        });
+        btnUpload.setOnClickListener(v -> showUploadOptions());
 
         findViewById(R.id.btnSettings).setOnClickListener(v -> {
             startActivity(new Intent(this, Settings.class));
@@ -81,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh the current fragment to reflect any data changes or settings
         Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
         if (current != null) {
             loadFragment(current.getClass().getName().contains("Month") ? new MonthFragment() :
@@ -92,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadDefaultFragment() {
         android.content.SharedPreferences prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
-        int defaultView = prefs.getInt("default_view_pos", 1); // 0: Month, 1: Week, 2: Day
+        int defaultView = prefs.getInt("default_view_pos", 1); 
         
         if (defaultView == 0) loadFragment(new MonthFragment());
         else if (defaultView == 2) loadFragment(new DayFragment());
@@ -107,32 +97,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showUploadOptions() {
-        String[] options = {"Upload PDF", "Upload Image", "Take Photo"};
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("Select Schedule Source")
+        String[] options = {"Choose PDF"};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Update Schedule")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                        intent.setType("application/pdf");
-                        startActivityForResult(intent, PICK_PDF);
-                    } else if (which == 1) {
-                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                        startActivityForResult(intent, PICK_IMAGE);
-                    } else if (which == 2) {
-                        checkCameraPermission();
-                    }
+                    if (which == 0) pickFile("application/pdf", PICK_PDF);
                 })
                 .show();
     }
 
-    private void checkCameraPermission() {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            androidx.core.app.ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
-        } else {
-            startCameraActivity();
-        }
+    private void pickFile(String type, int requestCode) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(type);
+        startActivityForResult(intent, requestCode);
     }
 
     private void checkNotificationPermission() {
@@ -145,58 +123,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startCameraActivity() {
-        Intent intent = new Intent(this, CameraOcrActivity.class);
-        startActivityForResult(intent, CAPTURE_OCR);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                startCameraActivity();
-            } else {
-                Toast.makeText(this, "Camera permission is required to scan schedule", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
+        if (resultCode == RESULT_OK && data != null) {
             if (requestCode == PICK_PDF) {
-                Uri uri = data.getData();
-                parsePDF(uri);
-            } else if (requestCode == PICK_IMAGE) {
-                Uri uri = data.getData();
-                recognizeTextFromImage(uri);
-            } else if (requestCode == CAPTURE_OCR) {
-                String resultText = data.getStringExtra("EXTRA_OCR_TEXT");
-                if (resultText != null) {
-                    processText(resultText);
-                }
+                parsePDF(data.getData());
             }
-        }
-    }
-
-    private void recognizeTextFromImage(Uri uri) {
-        try {
-            InputImage image = InputImage.fromFilePath(this, uri);
-            TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
-            recognizer.process(image)
-                    .addOnSuccessListener(visionText -> {
-                        String resultText = visionText.getText();
-                        Log.d(TAG, "OCR Extracted Text:\n" + resultText);
-                        processText(resultText);
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "OCR failed", e);
-                        Toast.makeText(this, "Text recognition failed", Toast.LENGTH_SHORT).show();
-                    });
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading image for OCR", e);
         }
     }
 
@@ -210,9 +143,7 @@ public class MainActivity extends AppCompatActivity {
                         new com.tom_roush.pdfbox.text.PDFTextStripper();
                 String text = stripper.getText(document);
                 document.close();
-                
-                Log.d(TAG, "Extracted Text:\n" + text);
-                processText(text);
+                runOnUiThread(() -> processText(text));
             } catch (Exception e) {
                 Log.e(TAG, "Error parsing PDF", e);
             }
@@ -220,88 +151,127 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processText(String text) {
-        DatabaseHelper db = new DatabaseHelper(this);
-        db.getWritableDatabase().delete(DatabaseHelper.TABLE_SCHEDULE, null, null);
-
+        List<ScheduleItem> parsedItems = new ArrayList<>();
         String[] lines = text.split("\\r?\\n");
+        
         String dayRegex = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)";
         String timeRegex = "(\\d{1,2}:\\d{2}\\s*[AP]M\\s*-\\s*\\d{1,2}:\\d{2}\\s*[AP]M)";
-        String sectionRegex = "([A-Z]{2,}[0-9]{2,}[A-Z]?)";
+        String sectionRegex = "([A-Z]{2,}\\d{2,}[A-Z]?)";
+        String unitsRegex = "(\\d\\.\\d)";
 
-        String currentSubject = "";
+        String currentSubjCode = "";
+        String currentSubjDesc = "";
         String currentSection = "";
-        List<String> currentDays = new ArrayList<>();
-        List<String> currentTimes = new ArrayList<>();
-        List<String> currentRooms = new ArrayList<>();
+        
+        List<String> bDays = new ArrayList<>();
+        List<String> bTimes = new ArrayList<>();
+        List<String> bRooms = new ArrayList<>();
+        boolean subjectStarted = false;
 
-        for (String line : lines) {
-            line = line.trim();
-            if (line.equalsIgnoreCase("Subject") ||
-                    line.equalsIgnoreCase("Code") ||
-                    line.contains("Subject Description") ||
-                    line.contains("Section Day") ||
-                    line.contains("Schedule Room") ||
-                    line.contains("Instructor Status") ||
-                    line.contains("Units")) {
-                continue;
-            }
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isEmpty() || line.equalsIgnoreCase("TOTAL UNITS") || line.contains("STUDENT'S SCHEDULES")) continue;
 
-            if (line.matches("^[A-Z]{4,}.*") && !line.contains(" - ")) {
-                if (line.split("\\s+")[0].matches("^[A-Z0-9]{4,8}$")) {
-                    currentSubject = line;
+            // 1. Detect Subject Header
+            if (!subjectStarted && line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.contains("-") && !line.contains(":")) {
+                String[] parts = line.split("\\s+");
+                currentSubjCode = parts[0];
+                int sectionIdx = -1;
+                for (int j = 1; j < parts.length; j++) {
+                    if (parts[j].matches(sectionRegex)) {
+                        sectionIdx = j;
+                        break;
+                    }
+                }
+                if (sectionIdx != -1) {
+                    currentSection = parts[sectionIdx];
+                    StringBuilder desc = new StringBuilder();
+                    for (int j = 1; j < sectionIdx; j++) desc.append(parts[j]).append(" ");
+                    currentSubjDesc = desc.toString().trim();
+                } else {
+                    currentSubjDesc = line.substring(currentSubjCode.length()).trim();
+                    currentSection = ""; 
+                }
+                subjectStarted = true;
+                // Continue to extract days/times from header line
+            } 
+            
+            if (subjectStarted) {
+                // Section detection (if missing)
+                if (currentSection.isEmpty()) {
+                    Matcher sm = Pattern.compile(sectionRegex).matcher(line);
+                    if (sm.find()) {
+                        currentSection = sm.group(1);
+                        String before = line.substring(0, sm.start()).trim();
+                        if (!before.isEmpty() && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(before).find()) {
+                            currentSubjDesc = (currentSubjDesc + " " + before).trim();
+                        }
+                    } else if (!line.matches(".*" + timeRegex + ".*") && !line.contains("Enrolled") && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(line).find()) {
+                        if (!line.matches("^[A-Z0-9]{3,8}\\s+.*")) {
+                            currentSubjDesc = (currentSubjDesc + " " + line).trim();
+                        }
+                    }
+                }
+
+                // Days
+                Matcher dm = Pattern.compile(dayRegex).matcher(line);
+                while (dm.find()) bDays.add(dm.group(1));
+
+                // Times
+                Matcher tm = Pattern.compile(timeRegex).matcher(line);
+                while (tm.find()) {
+                    bTimes.add(tm.group(1));
+                    String after = line.substring(tm.end()).trim();
+                    if (after.length() > 2) {
+                        String roomCandidate = after.split("Enrolled")[0].split("\\d\\.\\d")[0].trim();
+                        if (!roomCandidate.isEmpty() && !Pattern.compile(dayRegex).matcher(roomCandidate).find()) {
+                            bRooms.add(roomCandidate);
+                        }
+                    }
+                }
+
+                // Room separate line
+                if (bTimes.size() > bRooms.size()) {
+                    if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find() 
+                        && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)) {
+                        bRooms.add(line);
+                    }
                 }
             }
 
-            Matcher sectionMatcher = Pattern.compile(sectionRegex).matcher(line);
-            if (sectionMatcher.find()) {
-                currentSection = sectionMatcher.group(1);
-            }
-
-            Matcher dayMatcher = Pattern.compile(dayRegex).matcher(line);
-            while (dayMatcher.find()) {
-                currentDays.add(dayMatcher.group(1));
-            }
-
-            Matcher timeMatcher = Pattern.compile(timeRegex).matcher(line);
-            while (timeMatcher.find()) {
-                currentTimes.add(timeMatcher.group(1));
-            }
-
-            if (line.matches(".*Lab.*") ||
-                    line.matches(".*ComLab.*") ||
-                    line.matches("PE Room \\d+") ||
-                    line.matches("HSSH-\\d+") ||
-                    line.matches("V-\\d+")) {
-                currentRooms.add(line);
-            }
-
-
-            if (line.matches(".*Enrolled.*\\d+\\.\\d+")) {
+            // 3. Status/Instructor (Flush)
+            if (line.contains("Enrolled")) {
                 String instructor = line.split("Enrolled")[0].trim();
-                
-                int count = Math.max(currentDays.size(), currentTimes.size());
-                for (int m = 0; m < count; m++) {
-                    String d = (m < currentDays.size()) ? currentDays.get(m) : "N/A";
-                    String t = (m < currentTimes.size()) ? currentTimes.get(m) : "N/A";
-                    String r = (m < currentRooms.size()) ? currentRooms.get(m) : "TBA";
-                    
-                    db.insertSchedule(shortDay(d), t, currentSubject, currentSection, r, instructor);
-                }
+                String units = "3.0";
+                Matcher um = Pattern.compile(unitsRegex).matcher(line);
+                if (um.find()) units = um.group(1);
 
-                currentDays.clear();
-                currentTimes.clear();
-                currentRooms.clear();
-                currentSection = "";
+                int count = Math.max(bDays.size(), bTimes.size());
+                for (int k = 0; k < count; k++) {
+                    String d = (k < bDays.size()) ? bDays.get(k) : (bDays.isEmpty() ? "N/A" : bDays.get(bDays.size()-1));
+                    String t = (k < bTimes.size()) ? bTimes.get(k) : (bTimes.isEmpty() ? "N/A" : bTimes.get(bTimes.size()-1));
+                    String r = (k < bRooms.size()) ? bRooms.get(k) : "TBA";
+                    
+                    parsedItems.add(new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units));
+                }
+                
+                bDays.clear(); bTimes.clear(); bRooms.clear();
+                subjectStarted = false;
+                currentSubjCode = ""; currentSubjDesc = ""; currentSection = "";
             }
         }
-        
-        // After processing, schedule notifications
-        NotificationHelper.scheduleClassReminders(this);
-        
-        runOnUiThread(() -> {
-            Toast.makeText(this, "Schedule Updated & Notifications Set!", Toast.LENGTH_SHORT).show();
-            recreate();
-        });
+
+        if (parsedItems.isEmpty()) {
+            Toast.makeText(this, "No schedule detected.", Toast.LENGTH_LONG).show();
+        } else {
+            startEditActivity(parsedItems);
+        }
+    }
+
+    private void startEditActivity(List<ScheduleItem> items) {
+        Intent intent = new Intent(this, EditScheduleActivity.class);
+        intent.putExtra("SCHEDULE_ITEMS", (Serializable) items);
+        startActivity(intent);
     }
 
     private String shortDay(String day) {

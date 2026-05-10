@@ -25,6 +25,26 @@ public class NotificationHelper {
         }
     }
 
+    public static void cancelAllReminders(Context context) {
+        DatabaseHelper db = new DatabaseHelper(context);
+        List<ScheduleItem> schedules = db.getAllSchedules();
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        for (ScheduleItem item : schedules) {
+            Intent intent = new Intent(context, NotificationReceiver.class);
+            int notificationId = (item.subject + item.day + item.time).hashCode();
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    notificationId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            if (alarmManager != null) {
+                alarmManager.cancel(pendingIntent);
+            }
+        }
+    }
+
     private static void scheduleNotification(Context context, AlarmManager alarmManager, ScheduleItem item) {
         if (item.time == null || item.time.equals("N/A") || !item.time.contains("-")) return;
         if (item.day == null || item.day.equals("N/A")) return;

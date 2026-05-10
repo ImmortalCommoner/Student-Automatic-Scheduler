@@ -95,6 +95,12 @@ public class WeekFragment extends Fragment {
                     ScheduleItem item = dayMap.get(day);
                     TextView txtClass = createTableCell(item.subject + "\n" + item.room, false);
                     txtClass.setBackgroundColor(Color.parseColor("#E3F2FD")); // Light blue for classes
+                    
+                    txtClass.setOnLongClickListener(v -> {
+                        showActionDialog(item);
+                        return true;
+                    });
+                    
                     row.addView(txtClass);
                 } else {
                     // Empty cell (Free Time)
@@ -105,6 +111,41 @@ public class WeekFragment extends Fragment {
             }
             table.addView(row);
         }
+    }
+
+    private void showActionDialog(ScheduleItem item) {
+        String[] options = {"Edit", "Delete"};
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Schedule Action")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        editItem(item);
+                    } else if (which == 1) {
+                        deleteItem(item);
+                    }
+                })
+                .show();
+    }
+
+    private void editItem(ScheduleItem item) {
+        ArrayList<ScheduleItem> editList = new ArrayList<>();
+        editList.add(item);
+        android.content.Intent intent = new android.content.Intent(getContext(), EditScheduleActivity.class);
+        intent.putExtra("SCHEDULE_ITEMS", editList);
+        intent.putExtra("SINGLE_EDIT_MODE", true);
+        startActivity(intent);
+    }
+
+    private void deleteItem(ScheduleItem item) {
+        DatabaseHelper db = new DatabaseHelper(getContext());
+        db.getWritableDatabase().delete(
+                DatabaseHelper.TABLE_SCHEDULE,
+                "id=?",
+                new String[]{String.valueOf(item.id)}
+        );
+        // Refresh fragment
+        getParentFragmentManager().beginTransaction().detach(this).attach(this).commit();
+        NotificationHelper.scheduleClassReminders(requireContext());
     }
 
     private TextView createTableCell(String text, boolean isHeader) {

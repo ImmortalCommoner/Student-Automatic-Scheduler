@@ -13,13 +13,13 @@ import java.util.List;
 public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHolder> {
 
     private final List<ScheduleItem> list;
-    private final OnItemLongClick listener;
+    private final OnItemActionListener listener;
 
-    public interface OnItemLongClick {
-        void onDelete(int position);
+    public interface OnItemActionListener {
+        void onItemAction(int position, String action);
     }
 
-    public ScheduleAdapter(List<ScheduleItem> list, OnItemLongClick listener) {
+    public ScheduleAdapter(List<ScheduleItem> list, OnItemActionListener listener) {
         this.list = list;
         this.listener = listener;
     }
@@ -36,18 +36,26 @@ public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ScheduleItem item = list.get(holder.getBindingAdapterPosition());
 
+        String subjectDisplay = (item.subjectCode != null && !item.subjectCode.isEmpty()) 
+                ? "[" + item.subjectCode + "] " + item.subject 
+                : item.subject;
+        
         holder.day.setText(item.day);
         holder.time.setText(item.time);
-        holder.subject.setText(item.subject);
-        holder.section.setText(item.section);
-        holder.room.setText(item.room);
-        holder.instructor.setText(item.instructor);
+        holder.subject.setText(subjectDisplay);
+        holder.section.setText("Section: " + item.section);
+        holder.room.setText("Room: " + item.room);
+        holder.instructor.setText("Instructor: " + item.instructor);
 
         holder.itemView.setOnLongClickListener(v -> {
             if (listener != null) {
-                listener.onDelete(holder.getBindingAdapterPosition());
+                listener.onItemAction(holder.getBindingAdapterPosition(), "PROMPT");
             }
             return true;
+        });
+        
+        holder.itemView.setOnClickListener(v -> {
+            // Optional: short click action
         });
     }
 
