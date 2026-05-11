@@ -49,7 +49,6 @@ public class NotificationHelper {
         if (item.time == null || item.time.equals("N/A") || !item.time.contains("-")) return;
         if (item.day == null || item.day.equals("N/A")) return;
 
-        // time format: "11:00AM - 01:00PM"
         String startTimeStr = item.time.split("-")[0].trim();
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mma", Locale.US);
 
@@ -65,14 +64,11 @@ public class NotificationHelper {
             classCalendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE));
             classCalendar.set(Calendar.SECOND, 0);
 
-            // Set the day of the week
             int dayOfWeek = getDayOfWeek(item.day);
             classCalendar.set(Calendar.DAY_OF_WEEK, dayOfWeek);
 
-            // Schedule 10 minutes before class
             classCalendar.add(Calendar.MINUTE, -10);
 
-            // If the time has already passed this week, schedule for next week
             if (classCalendar.before(now)) {
                 classCalendar.add(Calendar.WEEK_OF_YEAR, 1);
             }
@@ -82,7 +78,6 @@ public class NotificationHelper {
             intent.putExtra("room", item.room);
             intent.putExtra("time", item.time);
 
-            // Unique ID for each notification based on hash of item properties
             int notificationId = (item.subject + item.day + item.time).hashCode();
 
             PendingIntent pendingIntent = PendingIntent.getBroadcast(

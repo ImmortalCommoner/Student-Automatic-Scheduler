@@ -1,11 +1,13 @@
 package com.example.studentautomaticscheduler;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
@@ -47,6 +49,38 @@ public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHo
         holder.room.setText("Room: " + item.room);
         holder.instructor.setText("Instructor: " + item.instructor);
 
+        boolean isDarkMode = (holder.itemView.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) 
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
+        String mode = item.classMode != null ? item.classMode : "Default";
+        int bgColor;
+        if (mode.equalsIgnoreCase("Online")) {
+            bgColor = isDarkMode ? Color.parseColor("#1565C0") : Color.parseColor("#E3F2FD");
+        } else if (mode.equalsIgnoreCase("Face-to-Face")) {
+            bgColor = isDarkMode ? Color.parseColor("#2E7D32") : Color.parseColor("#E8F5E9");
+        } else {
+            bgColor = isDarkMode ? Color.parseColor("#333333") : Color.parseColor("#F5F5F5");
+        }
+        
+        CardView card = holder.itemView.findViewById(R.id.cardMain);
+        card.setCardBackgroundColor(bgColor);
+
+        if (isDarkMode) {
+            holder.subject.setTextColor(Color.WHITE);
+            holder.section.setTextColor(Color.parseColor("#BBBBBB"));
+            holder.day.setTextColor(Color.parseColor("#AAAAAA"));
+            holder.time.setTextColor(Color.parseColor("#AAAAAA"));
+            holder.room.setTextColor(Color.parseColor("#BBBBBB"));
+            holder.instructor.setTextColor(Color.parseColor("#BBBBBB"));
+        } else {
+            holder.subject.setTextColor(Color.parseColor("#111111"));
+            holder.section.setTextColor(Color.parseColor("#666666"));
+            holder.day.setTextColor(Color.BLACK);
+            holder.time.setTextColor(Color.BLACK);
+            holder.room.setTextColor(Color.parseColor("#444444"));
+            holder.instructor.setTextColor(Color.parseColor("#444444"));
+        }
+
         holder.itemView.setOnLongClickListener(v -> {
             if (listener != null) {
                 listener.onItemAction(holder.getBindingAdapterPosition(), "PROMPT");
@@ -54,9 +88,7 @@ public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHo
             return true;
         });
         
-        holder.itemView.setOnClickListener(v -> {
-            // Optional: short click action
-        });
+        holder.itemView.setOnClickListener(v -> {});
     }
 
     @Override

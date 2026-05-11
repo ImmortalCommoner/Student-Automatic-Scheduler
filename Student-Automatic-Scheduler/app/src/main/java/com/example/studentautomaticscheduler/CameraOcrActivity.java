@@ -56,7 +56,6 @@ public class CameraOcrActivity extends AppCompatActivity {
             isProcessing = true;
             btnCapture.setEnabled(false);
             progressBar.setVisibility(View.VISIBLE);
-            // The actual capture happens in the ImageAnalysis analyzer when isProcessing is true
         });
     }
 

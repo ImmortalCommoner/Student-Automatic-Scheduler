@@ -12,7 +12,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "scheduler.db";
-    private static final int DB_VERSION = 5; // Upgraded for more fields
+    private static final int DB_VERSION = 6; 
 
     public static final String TABLE_SCHEDULE = "schedule";
     public static final String TABLE_USERS = "users";
@@ -34,7 +34,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "room TEXT," +
                         "instructor TEXT," +
                         "status TEXT," +
-                        "units TEXT)"
+                        "units TEXT," +
+                        "class_mode TEXT)"
         );
 
         db.execSQL(
@@ -65,6 +66,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN status TEXT");
             db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN units TEXT");
         }
+        if (oldVersion < 6) {
+            db.execSQL("ALTER TABLE " + TABLE_SCHEDULE + " ADD COLUMN class_mode TEXT");
+        }
     }
 
     public void insertSchedule(ScheduleItem item) {
@@ -90,6 +94,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put("instructor", item.instructor);
         cv.put("status", item.status);
         cv.put("units", item.units);
+        cv.put("class_mode", item.classMode);
         return cv;
     }
 
@@ -126,7 +131,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 cursor.getString(cursor.getColumnIndexOrThrow("room")),
                 cursor.getString(cursor.getColumnIndexOrThrow("instructor")),
                 cursor.getString(cursor.getColumnIndexOrThrow("status")),
-                cursor.getString(cursor.getColumnIndexOrThrow("units"))
+                cursor.getString(cursor.getColumnIndexOrThrow("units")),
+                cursor.getString(cursor.getColumnIndexOrThrow("class_mode"))
         );
     }
 

@@ -36,12 +36,10 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
-            // Register user in database
             boolean success = dbHelper.registerUser(username, password);
 
             if (success) {
                 Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
-                // Go back to Login
                 startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
                 finish();
             } else {
@@ -49,7 +47,6 @@ public class SignUpActivity extends AppCompatActivity {
             }
         });
 
-        // Already have an account? Login
         txtLogin.setOnClickListener(v ->
                 startActivity(new Intent(SignUpActivity.this, LoginActivity.class))
         );

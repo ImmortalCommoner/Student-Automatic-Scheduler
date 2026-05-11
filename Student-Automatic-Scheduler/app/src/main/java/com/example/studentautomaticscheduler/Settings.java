@@ -41,7 +41,6 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setupCustomizeView() {
-        // Dark Mode
         SwitchCompat switchDarkMode = findViewById(R.id.switchDarkMode);
         boolean isDarkMode = prefs.getBoolean("dark_mode", false);
         switchDarkMode.setChecked(isDarkMode);
@@ -55,14 +54,13 @@ public class Settings extends AppCompatActivity {
             }
         });
 
-        // Default View Spinner
         Spinner spinnerDefaultView = findViewById(R.id.spinnerDefaultView);
         String[] views = {"Month", "Week", "Day"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, views);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDefaultView.setAdapter(adapter);
         
-        int savedViewPos = prefs.getInt("default_view_pos", 1); // Default to Week (index 1)
+        int savedViewPos = prefs.getInt("default_view_pos", 1); 
         spinnerDefaultView.setSelection(savedViewPos);
         
         spinnerDefaultView.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -74,7 +72,6 @@ public class Settings extends AppCompatActivity {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        // Font Size
         SeekBar seekBarFontSize = findViewById(R.id.seekBarFontSize);
         int savedFontSize = prefs.getInt("font_size", 5);
         seekBarFontSize.setProgress(savedFontSize);
@@ -91,7 +88,6 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setupPersonalData() {
-        // Clear Data
         Button btnClearData = findViewById(R.id.btnClearData);
         btnClearData.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
@@ -106,14 +102,13 @@ public class Settings extends AppCompatActivity {
                     .show();
         });
 
-        // Log Out
         Button btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
                     .setTitle("Log Out")
                     .setMessage("Are you sure you want to log out?")
                     .setPositiveButton("Yes", (dialog, which) -> {
-                        finishAffinity(); // Close all activities
+                        finishAffinity();
                     })
                     .setNegativeButton("No", null)
                     .show();

@@ -11,7 +11,7 @@
 
         <TableLayout
             android:id="@+id/tableSchedule"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:stretchColumns="*"
             android:padding="8dp">
@@ -26,56 +26,56 @@
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="100dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Mon"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Tue"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Wed"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Thu"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Fri"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
 
                 <TextView
                     android:text="Sat"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
-                    android:gravity="center"
-                    android:minWidth="120dp"/>
+                    android:gravity="center"/>
+
+                <TextView
+                    android:text="Sun"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:padding="8dp"
+                    android:gravity="center"/>
             </TableRow>
 
             <!-- Dynamic rows will be added here -->

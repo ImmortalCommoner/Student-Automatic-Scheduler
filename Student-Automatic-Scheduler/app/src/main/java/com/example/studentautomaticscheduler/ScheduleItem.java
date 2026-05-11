@@ -3,7 +3,7 @@ package com.example.studentautomaticscheduler;
 import java.io.Serializable;
 
 public class ScheduleItem implements Serializable {
-    public int id = -1; // Default for new items
+    public int id = -1;
     public String day;
     public String time;
     public String subject;
@@ -13,6 +13,7 @@ public class ScheduleItem implements Serializable {
     public String instructor;
     public String status;
     public String units;
+    public String classMode; 
 
     public ScheduleItem(String day, String time, String subject, String subjectCode, String section, String room, String instructor, String status, String units) {
         this.day = day;
@@ -24,11 +25,21 @@ public class ScheduleItem implements Serializable {
         this.instructor = instructor;
         this.status = status;
         this.units = units;
+        this.classMode = "Face-to-Face"; 
     }
 
-    public ScheduleItem(int id, String day, String time, String subject, String subjectCode, String section, String room, String instructor, String status, String units) {
-        this(day, time, subject, subjectCode, section, room, instructor, status, units);
+    public ScheduleItem(int id, String day, String time, String subject, String subjectCode, String section, String room, String instructor, String status, String units, String classMode) {
         this.id = id;
+        this.day = day;
+        this.time = time;
+        this.subject = subject;
+        this.subjectCode = subjectCode;
+        this.section = section;
+        this.room = room;
+        this.instructor = instructor;
+        this.status = status;
+        this.units = units;
+        this.classMode = classMode;
     }
 
     public String toCsvRow() {
@@ -40,7 +51,8 @@ public class ScheduleItem implements Serializable {
                 escapeCsv(room) + "," +
                 escapeCsv(instructor) + "," +
                 escapeCsv(status) + "," +
-                escapeCsv(units);
+                escapeCsv(units) + "," +
+                escapeCsv(classMode);
     }
 
     private String escapeCsv(String value) {
@@ -62,6 +74,8 @@ public class ScheduleItem implements Serializable {
             }
         }
 
-        return new ScheduleItem(p[3], p[4], p[1], p[0], p[2], p[5], p[6], p[7], p[8]);
+        ScheduleItem item = new ScheduleItem(p[3], p[4], p[1], p[0], p[2], p[5], p[6], p[7], p[8]);
+        if (p.length > 9) item.classMode = p[9];
+        return item;
     }
 }

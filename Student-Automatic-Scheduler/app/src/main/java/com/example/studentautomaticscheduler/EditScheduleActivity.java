@@ -6,7 +6,10 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -99,6 +102,29 @@ public class EditScheduleActivity extends AppCompatActivity {
             holder.etStatus.setText(item.status);
             holder.etUnits.setText(item.units);
 
+            String[] modes = {"Face-to-Face", "Online", "Default"};
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(EditScheduleActivity.this, android.R.layout.simple_spinner_item, modes);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            holder.spinnerClassMode.setAdapter(adapter);
+
+            if (item.classMode != null) {
+                for (int i = 0; i < modes.length; i++) {
+                    if (modes[i].equalsIgnoreCase(item.classMode)) {
+                        holder.spinnerClassMode.setSelection(i);
+                        break;
+                    }
+                }
+            }
+
+            holder.spinnerClassMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    item.classMode = modes[position];
+                }
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+
             setupTextWatcher(holder.etSubjectCode, pos -> list.get(pos).subjectCode = holder.etSubjectCode.getText().toString(), holder);
             setupTextWatcher(holder.etDescription, pos -> list.get(pos).subject = holder.etDescription.getText().toString(), holder);
             setupTextWatcher(holder.etDay, pos -> list.get(pos).day = holder.etDay.getText().toString(), holder);
@@ -139,6 +165,7 @@ public class EditScheduleActivity extends AppCompatActivity {
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextInputEditText etSubjectCode, etDescription, etDay, etTime, etSection, etRoom, etInstructor, etStatus, etUnits;
+            Spinner spinnerClassMode;
             ImageButton btnRemove;
 
             ViewHolder(View v) {
@@ -152,6 +179,7 @@ public class EditScheduleActivity extends AppCompatActivity {
                 etInstructor = v.findViewById(R.id.etInstructor);
                 etStatus = v.findViewById(R.id.etStatus);
                 etUnits = v.findViewById(R.id.etUnits);
+                spinnerClassMode = v.findViewById(R.id.spinnerClassMode);
                 btnRemove = v.findViewById(R.id.btnRemove);
             }
         }

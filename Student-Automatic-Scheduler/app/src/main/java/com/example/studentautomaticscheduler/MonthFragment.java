@@ -50,7 +50,6 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemAct
             recycler.setAdapter(adapter);
         });
 
-        // Initialize with today's date
         String today = new SimpleDateFormat("EEE", Locale.US).format(Calendar.getInstance().getTime());
         list = db.getSchedulesByDay(today);
         adapter = new ScheduleAdapter(list, this);
@@ -85,7 +84,7 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemAct
         
         android.content.Intent intent = new android.content.Intent(getContext(), EditScheduleActivity.class);
         intent.putExtra("SCHEDULE_ITEMS", editList);
-        intent.putExtra("SINGLE_EDIT_MODE", true); // Flag to maybe handle saving differently
+        intent.putExtra("SINGLE_EDIT_MODE", true); 
         startActivity(intent);
     }
 
@@ -100,7 +99,6 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemAct
         list.remove(position);
         adapter.notifyItemRemoved(position);
         
-        // Refresh notifications
         NotificationHelper.scheduleClassReminders(requireContext());
     }
 }

@@ -31,7 +31,6 @@ public class LoginActivity extends AppCompatActivity {
         Button btnLogin = findViewById(R.id.btnLogin);
         TextView txtSignUp = findViewById(R.id.txtSignUp);
 
-        // ---- LOGIN BUTTON ----
         btnLogin.setOnClickListener(v -> {
             String user = etUsername.getText().toString().trim();
             String pass = etPassword.getText().toString().trim();
@@ -53,7 +52,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // ---- SIGN UP TEXT ----
         setupSignUpText(txtSignUp);
     }
 

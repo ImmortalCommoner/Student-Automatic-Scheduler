@@ -172,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
             String line = lines[i].trim();
             if (line.isEmpty() || line.equalsIgnoreCase("TOTAL UNITS") || line.contains("STUDENT'S SCHEDULES")) continue;
 
-            // 1. Detect Subject Header
             if (!subjectStarted && line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.contains("-") && !line.contains(":")) {
                 String[] parts = line.split("\\s+");
                 currentSubjCode = parts[0];
@@ -193,11 +192,9 @@ public class MainActivity extends AppCompatActivity {
                     currentSection = ""; 
                 }
                 subjectStarted = true;
-                // Continue to extract days/times from header line
             } 
             
             if (subjectStarted) {
-                // Section detection (if missing)
                 if (currentSection.isEmpty()) {
                     Matcher sm = Pattern.compile(sectionRegex).matcher(line);
                     if (sm.find()) {
@@ -213,11 +210,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                // Days
                 Matcher dm = Pattern.compile(dayRegex).matcher(line);
                 while (dm.find()) bDays.add(dm.group(1));
 
-                // Times
                 Matcher tm = Pattern.compile(timeRegex).matcher(line);
                 while (tm.find()) {
                     bTimes.add(tm.group(1));
@@ -230,7 +225,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                // Room separate line
                 if (bTimes.size() > bRooms.size()) {
                     if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find() 
                         && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)) {
@@ -239,7 +233,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // 3. Status/Instructor (Flush)
             if (line.contains("Enrolled")) {
                 String instructor = line.split("Enrolled")[0].trim();
                 String units = "3.0";
@@ -252,7 +245,9 @@ public class MainActivity extends AppCompatActivity {
                     String t = (k < bTimes.size()) ? bTimes.get(k) : (bTimes.isEmpty() ? "N/A" : bTimes.get(bTimes.size()-1));
                     String r = (k < bRooms.size()) ? bRooms.get(k) : "TBA";
                     
-                    parsedItems.add(new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units));
+                    ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units);
+                    newItem.classMode = getClassMode(r);
+                    parsedItems.add(newItem);
                 }
                 
                 bDays.clear(); bTimes.clear(); bRooms.clear();
@@ -266,6 +261,17 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startEditActivity(parsedItems);
         }
+    }
+
+    private String getClassMode(String room) {
+        if (room == null) return "Default";
+        String r = room.toUpperCase();
+        if (r.contains("V-") || r.contains("V") || r.contains("CCS")) {
+            return "Online";
+        } else if (r.contains("HSSH-") || r.contains("LAB") || r.contains("PE")) {
+            return "Face-to-Face";
+        }
+        return "Default";
     }
 
     private void startEditActivity(List<ScheduleItem> items) {

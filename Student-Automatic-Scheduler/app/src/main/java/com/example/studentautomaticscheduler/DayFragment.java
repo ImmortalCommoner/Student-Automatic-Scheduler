@@ -30,7 +30,6 @@ public class DayFragment extends Fragment implements ScheduleAdapter.OnItemActio
 
         DatabaseHelper db = new DatabaseHelper(getContext());
 
-        // get today name (Mon, Tue, etc.)
         String today = new SimpleDateFormat("EEE", Locale.US).format(new Date());
 
         list = db.getSchedulesByDay(today);
@@ -81,7 +80,6 @@ public class DayFragment extends Fragment implements ScheduleAdapter.OnItemActio
         list.remove(position);
         adapter.notifyItemRemoved(position);
 
-        // Refresh notifications
         NotificationHelper.scheduleClassReminders(requireContext());
     }
 }

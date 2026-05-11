@@ -37,7 +37,6 @@ public class WeekFragment extends Fragment {
         DatabaseHelper db = new DatabaseHelper(getContext());
         List<ScheduleItem> schedules = db.getAllSchedules();
 
-        // Define fixed hourly slots from 6AM to 9PM
         String[] timeSlots = {
                 "06:00AM - 07:00AM", "07:00AM - 08:00AM", "08:00AM - 09:00AM",
                 "09:00AM - 10:00AM", "10:00AM - 11:00AM", "11:00AM - 12:00PM",
@@ -49,13 +48,11 @@ public class WeekFragment extends Fragment {
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mma", Locale.US);
 
-        // Map to store which slot contains which class
         Map<String, Map<String, ScheduleItem>> tableData = new LinkedHashMap<>();
         for (String slot : timeSlots) {
             tableData.put(slot, new HashMap<String, ScheduleItem>());
         }
 
-        // Map classes into slots
         for (ScheduleItem item : schedules) {
             if (item.time == null || !item.time.contains("-")) continue;
 
@@ -69,8 +66,6 @@ public class WeekFragment extends Fragment {
                     long slotStart = sdf.parse(slotTimes[0].trim()).getTime();
                     long slotEnd = sdf.parse(slotTimes[1].trim()).getTime();
 
-                    // Check if class overlaps with this hourly slot
-                    // Overlap: itemStart < slotEnd AND slotStart < itemEnd
                     if (itemStart < slotEnd && slotStart < itemEnd) {
                         tableData.get(slot).put(item.day, item);
                     }
@@ -80,21 +75,17 @@ public class WeekFragment extends Fragment {
             }
         }
 
-        // Build the table rows
         for (String slot : timeSlots) {
             TableRow row = new TableRow(getContext());
             row.setPadding(0, 4, 0, 4);
 
-            // Time Slot Column
-            row.addView(createTableCell(slot, true));
+            row.addView(createTableCell(slot, true, null));
 
-            // Day Columns
             Map<String, ScheduleItem> dayMap = tableData.get(slot);
             for (String day : days) {
                 if (dayMap.containsKey(day)) {
                     ScheduleItem item = dayMap.get(day);
-                    TextView txtClass = createTableCell(item.subject + "\n" + item.room, false);
-                    txtClass.setBackgroundColor(Color.parseColor("#E3F2FD")); // Light blue for classes
+                    TextView txtClass = createTableCell(item.subject + "\n" + item.room, false, item);
                     
                     txtClass.setOnLongClickListener(v -> {
                         showActionDialog(item);
@@ -103,9 +94,7 @@ public class WeekFragment extends Fragment {
                     
                     row.addView(txtClass);
                 } else {
-                    // Empty cell (Free Time)
-                    TextView txtFree = createTableCell("FREE", false);
-                    txtFree.setTextColor(Color.parseColor("#CCCCCC"));
+                    TextView txtFree = createTableCell("FREE", false, null);
                     row.addView(txtFree);
                 }
             }
@@ -143,29 +132,54 @@ public class WeekFragment extends Fragment {
                 "id=?",
                 new String[]{String.valueOf(item.id)}
         );
-        // Refresh fragment
         getParentFragmentManager().beginTransaction().detach(this).attach(this).commit();
         NotificationHelper.scheduleClassReminders(requireContext());
     }
 
-    private TextView createTableCell(String text, boolean isHeader) {
+    private TextView createTableCell(String text, boolean isHeader, ScheduleItem item) {
         TextView tv = new TextView(getContext());
         tv.setText(text);
-        tv.setPadding(16, 24, 16, 24);
+        tv.setPadding(24, 48, 24, 48); 
         tv.setGravity(android.view.Gravity.CENTER);
-        tv.setTextSize(11);
+        tv.setTextSize(10);
         
+        int minHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 80, getResources().getDisplayMetrics());
+        tv.setMinHeight(minHeight);
+
+        TableRow.LayoutParams lp = new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.MATCH_PARENT);
+        tv.setLayoutParams(lp);
+
+        boolean isDarkMode = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) 
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
+        int bgColor;
+        int textColor;
+
         if (isHeader) {
-            tv.setBackgroundColor(Color.parseColor("#F5F5F5"));
+            bgColor = isDarkMode ? Color.parseColor("#1E1E1E") : Color.parseColor("#F5F5F5");
+            textColor = isDarkMode ? Color.WHITE : Color.BLACK;
             tv.setTypeface(null, Typeface.BOLD);
-            int minWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, getResources().getDisplayMetrics());
-            tv.setMinWidth(minWidth);
+        } else if (item != null) {
+            String mode = item.classMode != null ? item.classMode : "Default";
+            if (mode.equalsIgnoreCase("Online")) {
+                bgColor = isDarkMode ? Color.parseColor("#1565C0") : Color.parseColor("#E3F2FD");
+            } else if (mode.equalsIgnoreCase("Face-to-Face")) {
+                bgColor = isDarkMode ? Color.parseColor("#2E7D32") : Color.parseColor("#E8F5E9");
+            } else {
+                bgColor = isDarkMode ? Color.parseColor("#333333") : Color.parseColor("#F5F5F5");
+            }
+            textColor = isDarkMode ? Color.WHITE : Color.BLACK;
         } else {
-            int minWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 120, getResources().getDisplayMetrics());
-            tv.setMinWidth(minWidth);
+            bgColor = isDarkMode ? Color.parseColor("#121212") : Color.WHITE;
+            textColor = isDarkMode ? Color.parseColor("#444444") : Color.parseColor("#CCCCCC");
         }
 
-        tv.setBackgroundResource(R.drawable.cell_border);
+        android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+        gd.setColor(bgColor);
+        gd.setStroke(1, isDarkMode ? Color.parseColor("#333333") : Color.parseColor("#CCCCCC"));
+        tv.setBackground(gd);
+        tv.setTextColor(textColor);
+
         return tv;
     }
 }
