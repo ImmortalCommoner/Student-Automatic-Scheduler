@@ -1,5 +1,6 @@
 package com.example.studentautomaticscheduler;
 
+
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -21,6 +23,10 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+
+import android.widget.TimePicker;
+import android.app.AlertDialog;
 
 public class EditScheduleActivity extends AppCompatActivity {
 
@@ -94,8 +100,114 @@ public class EditScheduleActivity extends AppCompatActivity {
 
             holder.etSubjectCode.setText(item.subjectCode);
             holder.etDescription.setText(item.subject);
+
             holder.etDay.setText(item.day);
+            holder.etDay.setFocusable(false);
+            holder.etDay.setOnClickListener(v -> {
+                LayoutInflater inflater = LayoutInflater.from(EditScheduleActivity.this);
+                View dialogView = inflater.inflate(R.layout.dialog_day_picker, null);
+
+                NumberPicker dayPicker = dialogView.findViewById(R.id.dayPicker);
+                String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+                dayPicker.setMinValue(0);
+                dayPicker.setMaxValue(days.length - 1);
+                dayPicker.setDisplayedValues(days);
+
+
+                if (item.day != null) {
+                    for (int i = 0; i < days.length; i++) {
+                        if (days[i].equalsIgnoreCase(item.day)) {
+                            dayPicker.setValue(i);
+                            break;
+                        }
+                    }
+                }
+
+                new AlertDialog.Builder(EditScheduleActivity.this)
+                        .setTitle("Select Day")
+                        .setView(dialogView)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            String selectedDay = days[dayPicker.getValue()];
+                            holder.etDay.setText(selectedDay);
+                            item.day = selectedDay;
+                        })
+                        .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                        .show();
+            });
+
             holder.etTime.setText(item.time);
+            holder.etTime.setFocusable(false);
+            holder.etTime.setOnClickListener(v -> {
+
+                LayoutInflater inflater = LayoutInflater.from(EditScheduleActivity.this);
+                View dialogView = inflater.inflate(R.layout.dialog_time_range, null);
+
+                TimePicker startPicker = dialogView.findViewById(R.id.startTimePicker);
+                TimePicker endPicker = dialogView.findViewById(R.id.endTimePicker);
+
+                startPicker.setIs24HourView(Boolean.FALSE);
+                endPicker.setIs24HourView(Boolean.FALSE);
+
+                if (item.time != null && item.time.contains(" - ")) {
+                    try {
+                        String[] parts = item.time.split(" - ");
+                        String startStr = parts[0];
+                        String endStr = parts[1];
+
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("hh:mma", Locale.US);
+
+                        java.util.Date startDate = sdf.parse(startStr);
+                        java.util.Date endDate = sdf.parse(endStr);
+
+                        java.util.Calendar cal = java.util.Calendar.getInstance();
+
+                        cal.setTime(startDate);
+                        startPicker.setHour(cal.get(java.util.Calendar.HOUR_OF_DAY));
+                        startPicker.setMinute(cal.get(java.util.Calendar.MINUTE));
+
+                        cal.setTime(endDate);
+                        endPicker.setHour(cal.get(java.util.Calendar.HOUR_OF_DAY));
+                        endPicker.setMinute(cal.get(java.util.Calendar.MINUTE));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(EditScheduleActivity.this);
+                builder.setTitle("Set Time Range");
+                builder.setView(dialogView);
+
+                builder.setPositiveButton("OK", (dialog, which) -> {
+                    int startHour = startPicker.getHour();
+                    int startMinute = startPicker.getMinute();
+                    int endHour = endPicker.getHour();
+                    int endMinute = endPicker.getMinute();
+
+                    if (endHour < startHour || (endHour == startHour && endMinute <= startMinute)) {
+                        Toast.makeText(EditScheduleActivity.this,
+                                "End time must be later than start time",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String startAmPm = (startHour >= 12) ? "PM" : "AM";
+                    int displayStartHour = (startHour > 12) ? startHour - 12 : (startHour == 0 ? 12 : startHour);
+                    String startTime = String.format(Locale.US, "%02d:%02d%s", displayStartHour, startMinute, startAmPm);
+
+                    String endAmPm = (endHour >= 12) ? "PM" : "AM";
+                    int displayEndHour = (endHour > 12) ? endHour - 12 : (endHour == 0 ? 12 : endHour);
+                    String endTime = String.format(Locale.US, "%02d:%02d%s", displayEndHour, endMinute, endAmPm);
+
+                    String fullTime = startTime + " - " + endTime;
+                    holder.etTime.setText(fullTime);
+                    item.time = fullTime;
+                });
+
+                builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+                builder.show();
+            });
+
             holder.etSection.setText(item.section);
             holder.etRoom.setText(item.room);
             holder.etInstructor.setText(item.instructor);

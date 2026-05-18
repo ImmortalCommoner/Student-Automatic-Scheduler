@@ -29,49 +29,49 @@
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Mon"
+                    android:text="               Mon               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Tue"
+                    android:text="               Tue               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Wed"
+                    android:text="               Wed               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Thu"
+                    android:text="               Thu               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Fri"
+                    android:text="               Fri               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Sat"
+                    android:text="               Sat               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"
                     android:gravity="center"/>
 
                 <TextView
-                    android:text="Sun"
+                    android:text="               Sun               "
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:padding="8dp"

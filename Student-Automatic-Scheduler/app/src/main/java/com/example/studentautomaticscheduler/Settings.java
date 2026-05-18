@@ -72,19 +72,19 @@ public class Settings extends AppCompatActivity {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        SeekBar seekBarFontSize = findViewById(R.id.seekBarFontSize);
-        int savedFontSize = prefs.getInt("font_size", 5);
-        seekBarFontSize.setProgress(savedFontSize);
-        seekBarFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.edit().putInt("font_size", progress).apply();
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
+//        SeekBar seekBarFontSize = findViewById(R.id.seekBarFontSize);
+//        int savedFontSize = prefs.getInt("font_size", 5);
+//        seekBarFontSize.setProgress(savedFontSize);
+//        seekBarFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//            @Override
+//            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                prefs.edit().putInt("font_size", progress).apply();
+//            }
+//            @Override
+//            public void onStartTrackingTouch(SeekBar seekBar) {}
+//            @Override
+//            public void onStopTrackingTouch(SeekBar seekBar) {}
+//        });
     }
 
     private void setupPersonalData() {

@@ -33,6 +33,15 @@
             android:textColor="@color/text_primary"/>
 
         <ImageButton
+            android:id="@+id/btnAddManual"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Add Schedule"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
             android:id="@+id/btnSettings"
             android:layout_width="48dp"
             android:layout_height="48dp"

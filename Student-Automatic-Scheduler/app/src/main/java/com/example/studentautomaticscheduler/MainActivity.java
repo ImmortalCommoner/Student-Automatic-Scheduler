@@ -67,6 +67,15 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnSettings).setOnClickListener(v -> {
             startActivity(new Intent(this, Settings.class));
         });
+
+        findViewById(R.id.btnAddManual).setOnClickListener(v -> {
+            ArrayList<ScheduleItem> emptyList = new ArrayList<>();
+            emptyList.add(new ScheduleItem("", "", "", "", "", "", "", "", ""));
+            Intent intent = new Intent(this, EditScheduleActivity.class);
+            intent.putExtra("SCHEDULE_ITEMS", emptyList);
+            intent.putExtra("SINGLE_EDIT_MODE", true);
+            startActivity(intent);
+        });
     }
 
     @Override

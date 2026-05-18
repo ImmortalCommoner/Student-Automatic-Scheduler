@@ -171,7 +171,12 @@ public class WeekFragment extends Fragment {
             textColor = isDarkMode ? Color.WHITE : Color.BLACK;
         } else {
             bgColor = isDarkMode ? Color.parseColor("#121212") : Color.WHITE;
-            textColor = isDarkMode ? Color.parseColor("#444444") : Color.parseColor("#CCCCCC");
+
+            TypedValue typedValue = new TypedValue();
+            getContext().getTheme().resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
+            textColor = getResources().getColor(typedValue.resourceId, getContext().getTheme());
+
+            tv.setTypeface(null, Typeface.ITALIC);
         }
 
         android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();

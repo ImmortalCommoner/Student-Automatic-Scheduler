@@ -56,11 +56,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="Day">
+
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etDay"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textCapSentences"/>
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:inputType="none"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
