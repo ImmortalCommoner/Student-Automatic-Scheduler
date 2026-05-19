@@ -1,6 +1,8 @@
 package com.example.studentautomaticscheduler;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int CAMERA_PERMISSION_CODE = 103;
     private static final int NOTIFICATION_PERMISSION_CODE = 104;
     private static final String TAG = "PDF_PARSER";
+    private SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +80,58 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("SINGLE_EDIT_MODE", true);
             startActivity(intent);
         });
+
+        // Initialize Database
+        ReferenceDatabaseHelper refDb = new ReferenceDatabaseHelper(this);
+        refDb.copyDatabase();
+        db = openOrCreateDatabase("reference.db", MODE_PRIVATE, null);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (db != null) db.close();
+        super.onDestroy();
+    }
+
+    private String getSubjectDescriptionFromDb(String subjectCode) {
+        if (db == null || subjectCode == null || subjectCode.isEmpty()) return null;
+        try (Cursor cursor = db.rawQuery("SELECT subject_description FROM offerings_reference WHERE subject_code=? LIMIT 1", new String[]{subjectCode})) {
+            if (cursor.moveToFirst()) {
+                int idx = cursor.getColumnIndex("subject_description");
+                if (idx != -1) return cursor.getString(idx);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error querying DB for description", e);
+        }
+        return null;
+    }
+
+    private List<ScheduleItem> queryReference(String code, String section) {
+        List<ScheduleItem> items = new ArrayList<>();
+        if (db == null || code == null || section == null || code.isEmpty() || section.isEmpty()) return items;
+
+        try (Cursor cursor = db.rawQuery("SELECT * FROM offerings_reference WHERE subject_code=? AND section=?", new String[]{code, section})) {
+            int descIdx = cursor.getColumnIndex("subject_description");
+            int dayIdx = cursor.getColumnIndex("day");
+            int timeIdx = cursor.getColumnIndex("time");
+            int roomIdx = cursor.getColumnIndex("room");
+            int unitIdx = cursor.getColumnIndex("units");
+
+            while (cursor.moveToNext()) {
+                String d = (dayIdx != -1) ? cursor.getString(dayIdx) : "N/A";
+                String t = (timeIdx != -1) ? cursor.getString(timeIdx) : "N/A";
+                String desc = (descIdx != -1) ? cursor.getString(descIdx) : "";
+                String r = (roomIdx != -1) ? cursor.getString(roomIdx) : "TBA";
+                String u = (unitIdx != -1) ? cursor.getString(unitIdx) : "3.0";
+
+                ScheduleItem item = new ScheduleItem(shortDay(d), t, desc, code, section, r, "", "Enrolled", u);
+                item.classMode = getClassMode(r);
+                items.add(item);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "DB Query Error", e);
+        }
+        return items;
     }
 
     @Override
@@ -216,6 +271,9 @@ public class MainActivity extends AppCompatActivity {
                     currentSection = "";
                 }
                 subjectStarted = true;
+
+                String dbDesc = getSubjectDescriptionFromDb(currentSubjCode);
+                if (dbDesc != null) currentSubjDesc = dbDesc;
             }
             
             if (subjectStarted) {
@@ -263,15 +321,24 @@ public class MainActivity extends AppCompatActivity {
                 Matcher um = Pattern.compile(unitsRegex).matcher(line);
                 if (um.find()) units = um.group(1);
 
-                int count = Math.max(bDays.size(), bTimes.size());
-                for (int k = 0; k < count; k++) {
-                    String d = (k < bDays.size()) ? bDays.get(k) : (bDays.isEmpty() ? "N/A" : bDays.get(bDays.size()-1));
-                    String t = (k < bTimes.size()) ? bTimes.get(k) : (bTimes.isEmpty() ? "N/A" : bTimes.get(bTimes.size()-1));
-                    String r = (k < bRooms.size()) ? bRooms.get(k) : "TBA";
-                    
-                    ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units);
-                    newItem.classMode = getClassMode(r);
-                    parsedItems.add(newItem);
+                List<ScheduleItem> dbItems = queryReference(currentSubjCode, currentSection);
+                if (!dbItems.isEmpty()) {
+                    for (ScheduleItem dbi : dbItems) {
+                        if (dbi.instructor == null || dbi.instructor.isEmpty()) dbi.instructor = instructor;
+                        if (!currentSubjDesc.isEmpty()) dbi.subject = currentSubjDesc;
+                        parsedItems.add(dbi);
+                    }
+                } else {
+                    int count = Math.max(bDays.size(), bTimes.size());
+                    for (int k = 0; k < count; k++) {
+                        String d = (k < bDays.size()) ? bDays.get(k) : (bDays.isEmpty() ? "N/A" : bDays.get(bDays.size()-1));
+                        String t = (k < bTimes.size()) ? bTimes.get(k) : (bTimes.isEmpty() ? "N/A" : bTimes.get(bTimes.size()-1));
+                        String r = (k < bRooms.size()) ? bRooms.get(k) : "TBA";
+
+                        ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units);
+                        newItem.classMode = getClassMode(r);
+                        parsedItems.add(newItem);
+                    }
                 }
 
                 bDays.clear(); bTimes.clear(); bRooms.clear();
@@ -323,4 +390,6 @@ public class MainActivity extends AppCompatActivity {
             default: return day;
         }
     }
+
+
 }
