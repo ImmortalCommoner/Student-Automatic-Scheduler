@@ -10,15 +10,33 @@ import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
 
+import java.util.Locale;
+import android.speech.tts.TextToSpeech;
+import android.content.SharedPreferences;
+
 public class NotificationReceiver extends BroadcastReceiver {
 
     private static final String CHANNEL_ID = "class_reminders";
+    private TextToSpeech tts;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         String subject = intent.getStringExtra("subject");
         String room = intent.getStringExtra("room");
         String time = intent.getStringExtra("time");
+
+        SharedPreferences prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE);
+        boolean ttsEnabled = prefs.getBoolean("tts_enabled", false);
+
+        if (ttsEnabled) {
+            String message = "Reminder: You have " + subject + " in room " + room + " at " + time;
+            tts = new TextToSpeech(context.getApplicationContext(), status -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    tts.setLanguage(Locale.US);
+                    tts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "NotificationTTS");
+                }
+            });
+        }
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 

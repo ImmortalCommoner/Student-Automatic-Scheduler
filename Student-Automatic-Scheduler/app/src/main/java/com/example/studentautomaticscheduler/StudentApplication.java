@@ -4,11 +4,13 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.appcompat.app.AppCompatDelegate;
+import com.jakewharton.threetenabp.AndroidThreeTen;
 
 public class StudentApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        AndroidThreeTen.init(this);
         
         SharedPreferences prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE);
         boolean isDarkMode = prefs.getBoolean("dark_mode", false);

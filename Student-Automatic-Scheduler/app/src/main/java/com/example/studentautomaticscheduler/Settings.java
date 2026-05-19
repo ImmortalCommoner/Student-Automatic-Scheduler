@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SwitchCompat;
@@ -54,6 +55,13 @@ public class Settings extends AppCompatActivity {
             }
         });
 
+        SwitchCompat switchTTS = findViewById(R.id.switchTTS);
+        boolean isTTS = prefs.getBoolean("tts_enabled", false);
+        switchTTS.setChecked(isTTS);
+        switchTTS.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("tts_enabled", isChecked).apply();
+        });
+
         Spinner spinnerDefaultView = findViewById(R.id.spinnerDefaultView);
         String[] views = {"Month", "Week", "Day"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, views);
@@ -90,7 +98,7 @@ public class Settings extends AppCompatActivity {
     private void setupPersonalData() {
         Button btnClearData = findViewById(R.id.btnClearData);
         btnClearData.setOnClickListener(v -> {
-            new AlertDialog.Builder(this)
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                     .setTitle("Clear Data")
                     .setMessage("Are you sure you want to delete all schedule data?")
                     .setPositiveButton("Yes", (dialog, which) -> {
@@ -104,7 +112,7 @@ public class Settings extends AppCompatActivity {
 
         Button btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
-            new AlertDialog.Builder(this)
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                     .setTitle("Log Out")
                     .setMessage("Are you sure you want to log out?")
                     .setPositiveButton("Yes", (dialog, which) -> {

@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_PDF = 100;
+    private static final int SCAN_IMAGE = 101;
     private static final int CAMERA_PERMISSION_CODE = 103;
     private static final int NOTIFICATION_PERMISSION_CODE = 104;
     private static final String TAG = "PDF_PARSER";
@@ -106,11 +107,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showUploadOptions() {
-        String[] options = {"Choose PDF"};
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        String[] options = {"Choose PDF", "Scan Image (Camera/Gallery)"};
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Update Schedule")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) pickFile("application/pdf", PICK_PDF);
+                    else if (which == 1) {
+                        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                                == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            startActivityForResult(new Intent(this, CameraOcrActivity.class), SCAN_IMAGE);
+                        } else {
+                            androidx.core.app.ActivityCompat.requestPermissions(this,
+                                    new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+                        }
+                    }
                 })
                 .show();
     }
@@ -138,6 +148,11 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && data != null) {
             if (requestCode == PICK_PDF) {
                 parsePDF(data.getData());
+            } else if (requestCode == SCAN_IMAGE) {
+                String ocrText = data.getStringExtra("EXTRA_OCR_TEXT");
+                if (ocrText != null) {
+                    processText(ocrText);
+                }
             }
         }
     }
@@ -198,13 +213,13 @@ public class MainActivity extends AppCompatActivity {
                     currentSubjDesc = desc.toString().trim();
                 } else {
                     currentSubjDesc = line.substring(currentSubjCode.length()).trim();
-                    currentSection = ""; 
+                    currentSection = "";
                 }
                 subjectStarted = true;
-            } 
+            }
             
             if (subjectStarted) {
-                if (currentSection.isEmpty()) {
+                if (currentSection == null || currentSection.isEmpty()) {
                     Matcher sm = Pattern.compile(sectionRegex).matcher(line);
                     if (sm.find()) {
                         currentSection = sm.group(1);
@@ -235,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (bTimes.size() > bRooms.size()) {
-                    if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find() 
+                    if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find()
                         && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)) {
                         bRooms.add(line);
                     }
@@ -258,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                     newItem.classMode = getClassMode(r);
                     parsedItems.add(newItem);
                 }
-                
+
                 bDays.clear(); bTimes.clear(); bRooms.clear();
                 subjectStarted = false;
                 currentSubjCode = ""; currentSubjDesc = ""; currentSection = "";

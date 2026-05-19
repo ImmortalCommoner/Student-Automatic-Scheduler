@@ -104,7 +104,7 @@ public class WeekFragment extends Fragment {
 
     private void showActionDialog(ScheduleItem item) {
         String[] options = {"Edit", "Delete"};
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Schedule Action")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {

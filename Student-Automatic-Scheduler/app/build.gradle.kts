@@ -44,6 +44,8 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("com.github.prolificinteractive:material-calendarview:2.0.1")
+    implementation("com.jakewharton.threetenabp:threetenabp:1.4.9")
 
     // ML Kit & CameraX
     implementation(libs.mlkit.text.recognition)

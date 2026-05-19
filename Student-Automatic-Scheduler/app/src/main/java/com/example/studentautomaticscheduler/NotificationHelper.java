@@ -54,6 +54,8 @@ public class NotificationHelper {
 
         try {
             Date startTime = sdf.parse(startTimeStr);
+            if (startTime == null) return;
+
             Calendar classCalendar = Calendar.getInstance();
             Calendar now = Calendar.getInstance();
 

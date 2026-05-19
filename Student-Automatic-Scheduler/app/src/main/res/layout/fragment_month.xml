@@ -1,25 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/bg_month">
 
-    <CalendarView
+    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
         android:id="@+id/calendarView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/Theme.StudentAutomaticScheduler"/>
+        app:mcv_selectionColor="@color/link_blue"
+        app:mcv_dateTextAppearance="@style/CalendarDateStyle"
+        app:mcv_headerTextAppearance="@style/CalendarDateStyle"
+        app:mcv_weekDayTextAppearance="@style/CalendarDateStyle"
+        app:mcv_showOtherDates="all"
+        app:mcv_tileHeight="40dp"
+        android:theme="@style/CalendarArrowTheme"/>
 
     <TextView
         android:id="@+id/txtSelectedDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp"
+        android:layout_margin="8dp"
+        android:padding="12dp"
         android:text="Schedules for today:"
         android:textStyle="bold"
-        android:background="@color/surface_variant"
+        android:background="@drawable/bg_rounded_header"
         android:textColor="@color/text_primary"/>
 
     <androidx.recyclerview.widget.RecyclerView

@@ -25,8 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import androidx.appcompat.app.AlertDialog;
 import android.widget.TimePicker;
-import android.app.AlertDialog;
+// import android.app.AlertDialog; (removing this)
 
 public class EditScheduleActivity extends AppCompatActivity {
 

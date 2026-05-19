@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.app.AlertDialog;
 import java.util.List;
 import android.view.View;
 import java.text.SimpleDateFormat;
@@ -46,7 +47,7 @@ public class DayFragment extends Fragment implements ScheduleAdapter.OnItemActio
 
     private void showActionDialog(int position) {
         String[] options = {"Edit", "Delete"};
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Schedule Action")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {

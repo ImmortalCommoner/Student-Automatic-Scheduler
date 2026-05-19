@@ -53,6 +53,19 @@
                     android:layout_height="1dp"
                     android:background="@color/input_line" />
 
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchTTS"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:text="Announce Notifications (TTS)"
+                    android:textColor="@color/text_primary"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/input_line" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
