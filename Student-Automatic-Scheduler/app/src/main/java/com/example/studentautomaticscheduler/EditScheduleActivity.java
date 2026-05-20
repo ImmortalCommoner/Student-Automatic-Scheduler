@@ -109,15 +109,16 @@ public class EditScheduleActivity extends AppCompatActivity {
                 View dialogView = inflater.inflate(R.layout.dialog_day_picker, null);
 
                 NumberPicker dayPicker = dialogView.findViewById(R.id.dayPicker);
-                String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+                String[] fullDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+                String[] shortDays = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+                
                 dayPicker.setMinValue(0);
-                dayPicker.setMaxValue(days.length - 1);
-                dayPicker.setDisplayedValues(days);
-
+                dayPicker.setMaxValue(fullDays.length - 1);
+                dayPicker.setDisplayedValues(fullDays);
 
                 if (item.day != null) {
-                    for (int i = 0; i < days.length; i++) {
-                        if (days[i].equalsIgnoreCase(item.day)) {
+                    for (int i = 0; i < shortDays.length; i++) {
+                        if (shortDays[i].equalsIgnoreCase(item.day) || fullDays[i].equalsIgnoreCase(item.day)) {
                             dayPicker.setValue(i);
                             break;
                         }
@@ -128,9 +129,9 @@ public class EditScheduleActivity extends AppCompatActivity {
                         .setTitle("Select Day")
                         .setView(dialogView)
                         .setPositiveButton("OK", (dialog, which) -> {
-                            String selectedDay = days[dayPicker.getValue()];
-                            holder.etDay.setText(selectedDay);
-                            item.day = selectedDay;
+                            String selectedShort = shortDays[dayPicker.getValue()];
+                            holder.etDay.setText(selectedShort);
+                            item.day = selectedShort;
                         })
                         .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                         .show();

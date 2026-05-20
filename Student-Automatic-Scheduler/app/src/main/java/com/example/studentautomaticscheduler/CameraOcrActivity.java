@@ -11,8 +11,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -24,6 +24,7 @@ import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+import java.io.File;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +37,7 @@ public class CameraOcrActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private ExecutorService cameraExecutor;
     private TextRecognizer recognizer;
+    private ImageCapture imageCapture;
     private boolean isProcessing = false;
 
     @Override
@@ -52,11 +54,7 @@ public class CameraOcrActivity extends AppCompatActivity {
 
         startCamera();
 
-        btnCapture.setOnClickListener(v -> {
-            isProcessing = true;
-            btnCapture.setEnabled(false);
-            progressBar.setVisibility(View.VISIBLE);
-        });
+        btnCapture.setOnClickListener(v -> takePhoto());
     }
 
     private void startCamera() {
@@ -69,22 +67,14 @@ public class CameraOcrActivity extends AppCompatActivity {
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(viewFinder.getSurfaceProvider());
 
-                ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                imageCapture = new ImageCapture.Builder()
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                         .build();
-
-                imageAnalysis.setAnalyzer(cameraExecutor, image -> {
-                    if (isProcessing) {
-                        processImage(image);
-                    } else {
-                        image.close();
-                    }
-                });
 
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 
                 cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
 
             } catch (ExecutionException | InterruptedException e) {
                 Log.e("CameraOcr", "Use case binding failed", e);
@@ -92,40 +82,66 @@ public class CameraOcrActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
-    private void processImage(ImageProxy imageProxy) {
-        if (imageProxy.getImage() == null) {
-            imageProxy.close();
-            return;
+    private void takePhoto() {
+        if (imageCapture == null || isProcessing) return;
+
+        isProcessing = true;
+        btnCapture.setEnabled(false);
+        progressBar.setVisibility(View.VISIBLE);
+
+        File photoFile = new File(getExternalFilesDir(null), "ocr_capture.jpg");
+        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions.Builder(photoFile).build();
+
+        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
+            @Override
+            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                processImageFromFile(photoFile);
+            }
+
+            @Override
+            public void onError(@NonNull ImageCaptureException exception) {
+                Log.e("CameraOcr", "Photo capture failed: " + exception.getMessage(), exception);
+                isProcessing = false;
+                runOnUiThread(() -> {
+                    btnCapture.setEnabled(true);
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(CameraOcrActivity.this, "Capture failed", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void processImageFromFile(File file) {
+        try {
+            InputImage image = InputImage.fromFilePath(this, android.net.Uri.fromFile(file));
+            recognizer.process(image)
+                    .addOnSuccessListener(visionText -> {
+                        String text = visionText.getText();
+                        if (!text.isEmpty()) {
+                            Intent resultIntent = new Intent();
+                            resultIntent.putExtra("EXTRA_OCR_TEXT", text);
+                            setResult(RESULT_OK, resultIntent);
+                            finish();
+                        } else {
+                            resetUI("No text detected, try again");
+                        }
+                    })
+                    .addOnFailureListener(e -> resetUI("OCR Error: " + e.getMessage()));
+        } catch (java.io.IOException e) {
+            Log.e("CameraOcr", "Error reading image file", e);
+            resetUI("Error reading image");
         }
+    }
 
-        InputImage image = InputImage.fromMediaImage(imageProxy.getImage(), imageProxy.getImageInfo().getRotationDegrees());
-
-        recognizer.process(image)
-                .addOnSuccessListener(visionText -> {
-                    String text = visionText.getText();
-                    if (!text.isEmpty()) {
-                        Intent resultIntent = new Intent();
-                        resultIntent.putExtra("EXTRA_OCR_TEXT", text);
-                        setResult(RESULT_OK, resultIntent);
-                        finish();
-                    } else {
-                        isProcessing = false;
-                        runOnUiThread(() -> {
-                            btnCapture.setEnabled(true);
-                            progressBar.setVisibility(View.GONE);
-                            Toast.makeText(this, "No text detected, try again", Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    isProcessing = false;
-                    runOnUiThread(() -> {
-                        btnCapture.setEnabled(true);
-                        progressBar.setVisibility(View.GONE);
-                        Toast.makeText(this, "OCR Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                })
-                .addOnCompleteListener(task -> imageProxy.close());
+    private void resetUI(String message) {
+        isProcessing = false;
+        runOnUiThread(() -> {
+            btnCapture.setEnabled(true);
+            progressBar.setVisibility(View.GONE);
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

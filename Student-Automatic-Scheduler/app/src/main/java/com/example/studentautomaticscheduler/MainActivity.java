@@ -17,6 +17,10 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 
 import java.io.InputStream;
@@ -30,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int PICK_PDF = 100;
     private static final int SCAN_IMAGE = 101;
+    private static final int PICK_IMAGE = 102;
     private static final int CAMERA_PERMISSION_CODE = 103;
     private static final int NOTIFICATION_PERMISSION_CODE = 104;
     private static final String TAG = "PDF_PARSER";
@@ -162,11 +167,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showUploadOptions() {
-        String[] options = {"Choose PDF", "Scan Image (Camera/Gallery)"};
+        // String[] options = {"Choose PDF", "Scan from Camera", "Upload from Gallery"};
+        String[] options = {"Choose PDF"};
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Update Schedule")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) pickFile("application/pdf", PICK_PDF);
+                    if (which == 0) {
+                        pickFile("application/pdf", PICK_PDF);
+                    } 
+                    /* 
                     else if (which == 1) {
                         if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                                 == android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -175,7 +184,10 @@ public class MainActivity extends AppCompatActivity {
                             androidx.core.app.ActivityCompat.requestPermissions(this,
                                     new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
                         }
+                    } else if (which == 2) {
+                        pickFile("image/*", PICK_IMAGE);
                     }
+                    */
                 })
                 .show();
     }
@@ -208,7 +220,23 @@ public class MainActivity extends AppCompatActivity {
                 if (ocrText != null) {
                     processText(ocrText);
                 }
+            } else if (requestCode == PICK_IMAGE) {
+                processImageFromUri(data.getData());
             }
+        }
+    }
+
+    private void processImageFromUri(Uri uri) {
+        if (uri == null) return;
+        try {
+            InputImage image = InputImage.fromFilePath(this, uri);
+            TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+            
+            recognizer.process(image)
+                .addOnSuccessListener(visionText -> processText(visionText.getText()))
+                .addOnFailureListener(e -> Toast.makeText(this, "OCR Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        } catch (Exception e) {
+            Log.e(TAG, "Error processing image uri", e);
         }
     }
 
@@ -230,6 +258,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            Toast.makeText(this, "No text detected.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         List<ScheduleItem> parsedItems = new ArrayList<>();
         String[] lines = text.split("\\r?\\n");
         
@@ -249,31 +282,58 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i].trim();
-            if (line.isEmpty() || line.equalsIgnoreCase("TOTAL UNITS") || line.contains("STUDENT'S SCHEDULES")) continue;
+            String upper = line.toUpperCase();
 
-            if (!subjectStarted && line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.contains("-") && !line.contains(":")) {
+            // Skip common headers and metadata
+            if (line.isEmpty() || line.equalsIgnoreCase("TOTAL UNITS") || line.contains("STUDENT'S SCHEDULES")
+                    || upper.contains("BACHELOR OF SCIENCE") || upper.contains("STUDENT NO")
+                    || upper.contains("COLLEGE OF") || upper.contains("UNIVERSITY OF")
+                    || upper.contains("ACADEMIC YEAR") || upper.contains("STUDENT NAME")
+                    || upper.contains("STUDENT ID") || upper.contains("STUDENT COURSE")
+                    || upper.contains("COMPUTER SCIENCE")) continue;
+
+            // Skip table header lines (Subject Code Description Section etc.)
+            int headerKeywords = 0;
+            if (upper.contains("SUBJECT")) headerKeywords++;
+            if (upper.contains("CODE")) headerKeywords++;
+            if (upper.contains("DESCRIPTION")) headerKeywords++;
+            if (upper.contains("SECTION")) headerKeywords++;
+            if (upper.contains("INSTRUCTOR")) headerKeywords++;
+            if (headerKeywords >= 2) continue;
+
+            if (!subjectStarted && line.matches("^[A-Z0-9]{3,10}\\s+.*") && !line.contains("-") && !line.contains(":")) {
                 String[] parts = line.split("\\s+");
-                currentSubjCode = parts[0];
-                int sectionIdx = -1;
-                for (int j = 1; j < parts.length; j++) {
-                    if (parts[j].matches(sectionRegex)) {
-                        sectionIdx = j;
-                        break;
+                if (parts.length > 0) {
+                    String candidateCode = parts[0];
+                    if (candidateCode.equalsIgnoreCase("SUBJECT") || candidateCode.equalsIgnoreCase("SECTION")
+                        || candidateCode.equalsIgnoreCase("STUDENT") || candidateCode.equalsIgnoreCase("DATE")
+                        || candidateCode.equalsIgnoreCase("COURSE") || candidateCode.equalsIgnoreCase("NAME")
+                        || candidateCode.equalsIgnoreCase("ISSUED") || candidateCode.equalsIgnoreCase("ROOM")) {
+                        continue;
                     }
-                }
-                if (sectionIdx != -1) {
-                    currentSection = parts[sectionIdx];
-                    StringBuilder desc = new StringBuilder();
-                    for (int j = 1; j < sectionIdx; j++) desc.append(parts[j]).append(" ");
-                    currentSubjDesc = desc.toString().trim();
-                } else {
-                    currentSubjDesc = line.substring(currentSubjCode.length()).trim();
-                    currentSection = "";
-                }
-                subjectStarted = true;
 
-                String dbDesc = getSubjectDescriptionFromDb(currentSubjCode);
-                if (dbDesc != null) currentSubjDesc = dbDesc;
+                    currentSubjCode = candidateCode;
+                    int sectionIdx = -1;
+                    for (int j = 1; j < parts.length; j++) {
+                        if (parts[j].matches(sectionRegex)) {
+                            sectionIdx = j;
+                            break;
+                        }
+                    }
+                    if (sectionIdx != -1) {
+                        currentSection = parts[sectionIdx];
+                        StringBuilder desc = new StringBuilder();
+                        for (int j = 1; j < sectionIdx; j++) desc.append(parts[j]).append(" ");
+                        currentSubjDesc = desc.toString().trim();
+                    } else {
+                        currentSubjDesc = line.substring(currentSubjCode.length()).trim();
+                        currentSection = "";
+                    }
+                    subjectStarted = true;
+
+                    String dbDesc = getSubjectDescriptionFromDb(currentSubjCode);
+                    if (dbDesc != null) currentSubjDesc = dbDesc;
+                }
             }
             
             if (subjectStarted) {
@@ -286,7 +346,8 @@ public class MainActivity extends AppCompatActivity {
                             currentSubjDesc = (currentSubjDesc + " " + before).trim();
                         }
                     } else if (!line.matches(".*" + timeRegex + ".*") && !line.contains("Enrolled") && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(line).find()) {
-                        if (!line.matches("^[A-Z0-9]{3,8}\\s+.*")) {
+                        if (!line.matches("^[A-Z0-9]{3,8}\\s+.*") && !upper.contains("SUBJECT") && !upper.contains("SECTION")
+                            && !upper.contains("ROOM") && !upper.contains("INSTRUCTOR") && !upper.contains("STATUS") && !upper.contains("UNITS")) {
                             currentSubjDesc = (currentSubjDesc + " " + line).trim();
                         }
                     }
@@ -300,23 +361,40 @@ public class MainActivity extends AppCompatActivity {
                     bTimes.add(tm.group(1));
                     String after = line.substring(tm.end()).trim();
                     if (after.length() > 2) {
-                        String roomCandidate = after.split("Enrolled")[0].split("\\d\\.\\d")[0].trim();
-                        if (!roomCandidate.isEmpty() && !Pattern.compile(dayRegex).matcher(roomCandidate).find()) {
-                            bRooms.add(roomCandidate);
+                        String[] enrolledParts = after.split("Enrolled");
+                        if (enrolledParts.length > 0) {
+                            String roomCandidate = enrolledParts[0];
+                            String[] unitParts = roomCandidate.split("\\d\\.\\d");
+                            if (unitParts.length > 0) {
+                                roomCandidate = unitParts[0].trim();
+                            }
+                            if (!roomCandidate.isEmpty() && !Pattern.compile(dayRegex).matcher(roomCandidate).find()
+                                && !roomCandidate.equalsIgnoreCase("Room") && !roomCandidate.equalsIgnoreCase("Instructor")
+                                && !roomCandidate.equalsIgnoreCase("Schedule") && !roomCandidate.equalsIgnoreCase("Status")
+                                && !roomCandidate.equalsIgnoreCase("Units")) {
+                                bRooms.add(roomCandidate);
+                            }
                         }
                     }
                 }
 
                 if (bTimes.size() > bRooms.size()) {
                     if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find()
-                        && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)) {
+                        && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)
+                        && !line.equalsIgnoreCase("Room") && !line.equalsIgnoreCase("Instructor") && !line.equalsIgnoreCase("Units")
+                        && !line.equalsIgnoreCase("Schedule") && !line.equalsIgnoreCase("Status")) {
                         bRooms.add(line);
                     }
                 }
             }
 
             if (line.contains("Enrolled")) {
-                String instructor = line.split("Enrolled")[0].trim();
+                String instructor = "";
+                String[] enrolledParts = line.split("Enrolled");
+                if (enrolledParts.length > 0) {
+                    instructor = enrolledParts[0].trim();
+                }
+
                 String units = "3.0";
                 Matcher um = Pattern.compile(unitsRegex).matcher(line);
                 if (um.find()) units = um.group(1);
@@ -326,7 +404,18 @@ public class MainActivity extends AppCompatActivity {
                     for (ScheduleItem dbi : dbItems) {
                         if (dbi.instructor == null || dbi.instructor.isEmpty()) dbi.instructor = instructor;
                         if (!currentSubjDesc.isEmpty()) dbi.subject = currentSubjDesc;
-                        parsedItems.add(dbi);
+                        
+                        // Check for duplicates before adding
+                        boolean exists = false;
+                        for (ScheduleItem existing : parsedItems) {
+                            if (existing.subjectCode.equalsIgnoreCase(dbi.subjectCode) &&
+                                existing.day.equalsIgnoreCase(dbi.day) &&
+                                existing.time.equalsIgnoreCase(dbi.time)) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) parsedItems.add(dbi);
                     }
                 } else {
                     int count = Math.max(bDays.size(), bTimes.size());
@@ -337,7 +426,18 @@ public class MainActivity extends AppCompatActivity {
 
                         ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units);
                         newItem.classMode = getClassMode(r);
-                        parsedItems.add(newItem);
+
+                        // Check for duplicates before adding
+                        boolean exists = false;
+                        for (ScheduleItem existing : parsedItems) {
+                            if (existing.subjectCode.equalsIgnoreCase(newItem.subjectCode) &&
+                                existing.day.equalsIgnoreCase(newItem.day) &&
+                                existing.time.equalsIgnoreCase(newItem.time)) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) parsedItems.add(newItem);
                     }
                 }
 
