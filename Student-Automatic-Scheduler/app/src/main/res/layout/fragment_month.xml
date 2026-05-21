@@ -1,37 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/bg_month">
 
-    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-        android:id="@+id/calendarView"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:mcv_selectionColor="@color/link_blue"
-        app:mcv_dateTextAppearance="@style/CalendarDateStyle"
-        app:mcv_headerTextAppearance="@style/CalendarDateStyle"
-        app:mcv_weekDayTextAppearance="@style/CalendarDateStyle"
-        app:mcv_showOtherDates="all"
-        app:mcv_tileHeight="40dp"
-        android:theme="@style/CalendarArrowTheme"/>
 
-    <TextView
-        android:id="@+id/txtSelectedDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:padding="12dp"
-        android:text="Schedules for today:"
-        android:textStyle="bold"
-        android:background="@drawable/bg_rounded_header"
-        android:textColor="@color/text_primary"/>
+        android:orientation="vertical"
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerSchedule"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-</LinearLayout>
+        android:paddingBottom="110dp">
+
+        <!-- CALENDAR CARD -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
+
+            app:cardCornerRadius="24dp"
+            app:cardElevation="3dp"
+            app:cardBackgroundColor="@color/surface">
+
+            <com.prolificinteractive.materialcalendarview.MaterialCalendarView
+                android:id="@+id/calendarView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:padding="8dp"
+
+                app:mcv_selectionColor="@color/link_blue"
+                app:mcv_dateTextAppearance="@style/CalendarDateStyle"
+                app:mcv_headerTextAppearance="@style/CalendarDateStyle"
+                app:mcv_weekDayTextAppearance="@style/CalendarDateStyle"
+                app:mcv_showOtherDates="all"
+                app:mcv_tileHeight="42dp"
+
+                android:theme="@style/CalendarArrowTheme"/>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- HEADER -->
+        <TextView
+            android:id="@+id/txtSelectedDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="8dp"
+
+            android:padding="14dp"
+
+            android:text="Schedules for today:"
+            android:textStyle="bold"
+            android:textSize="17sp"
+
+            android:background="@drawable/bg_rounded_header"
+            android:textColor="@color/text_primary"/>
+
+        <!-- SCHEDULE LIST -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerSchedule"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:nestedScrollingEnabled="false"
+
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+
+            android:clipToPadding="false"/>
+
+    </LinearLayout>
+
+</ScrollView>

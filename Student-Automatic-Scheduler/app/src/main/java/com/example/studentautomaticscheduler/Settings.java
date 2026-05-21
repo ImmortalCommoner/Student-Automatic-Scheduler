@@ -3,6 +3,8 @@ package com.example.studentautomaticscheduler;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -100,13 +102,13 @@ public class Settings extends AppCompatActivity {
 
         int savedTimePos = prefs.getInt("notification_lead_time_pos", 3);
         spinnerNotificationTime.setSelection(savedTimePos);
-        spinnerNotificationTime.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+        spinnerNotificationTime.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 prefs.edit().putInt("notification_lead_time_pos", position).apply();
             }
             @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
