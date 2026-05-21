@@ -2,23 +2,33 @@
 <resources>
 
     <!-- ===== TEXT ===== -->
-    <color name="text_primary">#111111</color>
-    <color name="text_secondary">#555555</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#3A4454</color>
+
 
     <!-- ===== INPUTS ===== -->
     <color name="input_text">@color/text_primary</color>
-    <color name="input_hint">#777777</color>
-    <color name="input_line">#B0B0B0</color>
+    <color name="input_hint">#7A7A7A</color>
+    <color name="input_line">#B8B8B8</color>
 
     <!-- ===== BUTTONS ===== -->
     <color name="button_text">#FFFFFF</color>
-    <color name="button_bg">#2F3981</color>
+    <color name="button_bg">#1F2F75</color>
 
     <!-- ===== SURFACES ===== -->
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#EAEAEA</color>
+    <color name="surface_variant">#F1F1F1</color>
 
-    <color name="link_blue">#2962FF</color>
+    <!-- ===== LINKS ===== -->
+    <color name="link_blue">#3D7DFF</color>
 
+    <!-- ===== SCHEDULE ===== -->
+    <color name="schedule_text">#222222</color>
+    <color name="schedule_secondary">#666666</color>
+
+    <!-- ===== GRADIENT ===== -->
+    <color name="gradient_top">#102C57</color>
+    <color name="gradient_middle">#F8F8F8</color>
+    <color name="gradient_bottom">#F2C94C</color>
 
 </resources>

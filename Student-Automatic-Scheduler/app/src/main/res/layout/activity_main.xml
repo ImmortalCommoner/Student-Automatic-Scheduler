@@ -1,119 +1,217 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:padding="16dp"
-    android:background="@drawable/bg_main">
 
-    <!-- ======== Header ======== -->
+    android:background="@drawable/bg_dashboard"
+
+    tools:context=".MainActivity">
+
+    <!-- Header -->
     <LinearLayout
         android:id="@+id/header"
+
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="8dp"
+
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
-            android:id="@+id/txtGreeting"
+        <!-- Greeting -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Welcome, Guest"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-            android:textSize="25sp"
-            android:textColor="@color/text_primary"/>
 
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/txtGreeting"
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:text="Welcome, Guest"
+
+                android:textSize="26sp"
+                android:textStyle="bold"
+
+                android:textColor="@color/text_primary"/>
+        </LinearLayout>
+
+        <!-- Add Button -->
         <ImageButton
             android:id="@+id/btnAddManual"
+
             android:layout_width="48dp"
             android:layout_height="48dp"
+
+            android:layout_marginEnd="4dp"
+
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add Schedule"
-            android:src="@android:drawable/ic_input_add"
-            app:tint="@color/text_primary" />
 
+            android:padding="10dp"
+
+            android:src="@android:drawable/ic_input_add"
+
+            app:tint="@color/text_primary"/>
+
+        <!-- Settings Button -->
         <ImageButton
             android:id="@+id/btnSettings"
+
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@null"
+
+            android:background="@android:color/transparent"
             android:contentDescription="Settings"
+
+            android:padding="10dp"
+
             android:src="@android:drawable/ic_menu_preferences"
-            app:tint="@color/text_primary" />
+
+            app:tint="@color/text_primary"/>
 
     </LinearLayout>
 
-    <!-- === View Switcher === -->
+    <!-- View Switcher -->
     <LinearLayout
         android:id="@+id/viewSwitcher"
+
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="16dp"
+
         android:orientation="horizontal"
-        android:layout_marginTop="8dp"
+
         app:layout_constraintTop_toBottomOf="@id/header"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" >
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
+        <!-- Month -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMonth"
+
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
+
             android:layout_weight="1"
-            android:backgroundTint="@color/button_bg"
+            android:layout_marginEnd="6dp"
+
             android:text="Month"
-            android:textColor="@color/button_text"/>
+            android:textAllCaps="false"
 
-        <Button
+            android:textColor="@color/button_text"
+
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/button_bg"/>
+
+        <!-- Week -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnWeek"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:backgroundTint="@color/button_bg"
-            android:text="Week"
-            android:textColor="@color/button_text"/>
 
-        <Button
-            android:id="@+id/btnDay"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
+
             android:layout_weight="1"
-            android:backgroundTint="@color/button_bg"
+            android:layout_marginEnd="6dp"
+
+            android:text="Week"
+            android:textAllCaps="false"
+
+            android:textColor="@color/button_text"
+
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/button_bg"/>
+
+        <!-- Day -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDay"
+
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+
+            android:layout_weight="1"
+
             android:text="Day"
-            android:textColor="@color/button_text"/>
+            android:textAllCaps="false"
+
+            android:textColor="@color/button_text"
+
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/button_bg"/>
 
     </LinearLayout>
 
-    <!-- === Fragment Container (Body) === -->
+    <!-- Fragment Container -->
     <FrameLayout
         android:id="@+id/fragmentContainer"
+
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/viewSwitcher"
-        app:layout_constraintBottom_toTopOf="@id/btnUploadSchedule"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- === Upload Button === -->
-    <Button
-        android:id="@+id/btnUploadSchedule"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:backgroundTint="@color/button_bg"
-        android:text="Upload / Update Schedule"
-        android:textColor="@color/button_text"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="90dp"
+
+        app:layout_constraintTop_toBottomOf="@id/viewSwitcher"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Watermark -->
+        <ImageView
+            android:id="@+id/watermarkLogo"
+
+            android:layout_width="400dp"
+            android:layout_height="400dp"
+
+            android:layout_gravity="center"
+
+            android:alpha="0.50"
+
+            android:scaleType="fitCenter"
+            android:src="@drawable/nu_watermark"/>
+
+    </FrameLayout>
+
+    <!-- Upload Button -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/btnUploadSchedule"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_marginBottom="22dp"
+
+        android:text="Upload"
+        android:textAllCaps="false"
+
+        android:textColor="@android:color/white"
+
+        app:backgroundTint="@color/button_bg"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
