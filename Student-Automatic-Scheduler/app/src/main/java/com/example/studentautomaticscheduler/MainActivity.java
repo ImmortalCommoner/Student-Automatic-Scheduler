@@ -1,8 +1,11 @@
 package com.example.studentautomaticscheduler;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +14,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -29,6 +34,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.ai.client.generativeai.GenerativeModel;
+import com.google.ai.client.generativeai.java.GenerativeModelFutures;
+import com.google.ai.client.generativeai.type.Content;
+import com.google.ai.client.generativeai.type.GenerateContentResponse;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -167,16 +183,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showUploadOptions() {
-        // String[] options = {"Choose PDF", "Scan from Camera", "Upload from Gallery"};
-        String[] options = {"Choose PDF"};
+        android.content.SharedPreferences prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
+        String userApiKey = prefs.getString("user_gemini_api_key", "");
+
+        List<String> optionsList = new ArrayList<>();
+        optionsList.add("Choose PDF");
+
+        // Only show OCR/Image options if the user has provided an AI key
+        if (!userApiKey.isEmpty()) {
+            optionsList.add("Scan from Camera");
+            optionsList.add("Upload from Gallery");
+        }
+
+        String[] options = optionsList.toArray(new String[0]);
+
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Update Schedule")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
+                    String selected = options[which];
+                    if (selected.equals("Choose PDF")) {
                         pickFile("application/pdf", PICK_PDF);
-                    } 
-                    /* 
-                    else if (which == 1) {
+                    } else if (selected.equals("Scan from Camera")) {
                         if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                                 == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                             startActivityForResult(new Intent(this, CameraOcrActivity.class), SCAN_IMAGE);
@@ -184,10 +211,9 @@ public class MainActivity extends AppCompatActivity {
                             androidx.core.app.ActivityCompat.requestPermissions(this,
                                     new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
                         }
-                    } else if (which == 2) {
+                    } else if (selected.equals("Upload from Gallery")) {
                         pickFile("image/*", PICK_IMAGE);
                     }
-                    */
                 })
                 .show();
     }
@@ -218,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (requestCode == SCAN_IMAGE) {
                 String ocrText = data.getStringExtra("EXTRA_OCR_TEXT");
                 if (ocrText != null) {
-                    processText(ocrText);
+                    handleExtractedText(ocrText);
                 }
             } else if (requestCode == PICK_IMAGE) {
                 processImageFromUri(data.getData());
@@ -233,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
             TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
             
             recognizer.process(image)
-                .addOnSuccessListener(visionText -> processText(visionText.getText()))
+                .addOnSuccessListener(visionText -> handleExtractedText(visionText.getText()))
                 .addOnFailureListener(e -> Toast.makeText(this, "OCR Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         } catch (Exception e) {
             Log.e(TAG, "Error processing image uri", e);
@@ -250,11 +276,129 @@ public class MainActivity extends AppCompatActivity {
                         new com.tom_roush.pdfbox.text.PDFTextStripper();
                 String text = stripper.getText(document);
                 document.close();
-                runOnUiThread(() -> processText(text));
+                runOnUiThread(() -> handleExtractedText(text));
             } catch (Exception e) {
                 Log.e(TAG, "Error parsing PDF", e);
             }
         }).start();
+    }
+
+    private void processTextWithGemini(String rawExtractedText) {
+        if (rawExtractedText == null || rawExtractedText.trim().isEmpty()) {
+            Toast.makeText(this, "No text detected to send to Gemini.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        android.content.SharedPreferences prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
+        String userApiKey = prefs.getString("user_gemini_api_key", "");
+
+        if (userApiKey.isEmpty()) {
+            Log.d("GEMINI_DEBUG", "No user API key found. Falling back to local parsing.");
+            Toast.makeText(this, "No AI key provided. Using local parser.", Toast.LENGTH_SHORT).show();
+            processText(rawExtractedText);
+            return;
+        }
+
+        Log.d("GEMINI_DEBUG", "Starting Gemini parsing with user key...");
+
+        // 1. Initialize the model using gemini-2.5-flash-lite
+        GenerativeModel gm = new GenerativeModel(
+                "gemini-2.5-flash-lite",
+                userApiKey
+        );
+        GenerativeModelFutures modelFutures = GenerativeModelFutures.from(gm);
+
+        // 2. Formulate the precise prompt telling Gemini exactly how to map data structures and split up rows
+        String structuredPrompt =
+                "You are an expert data parsing assistant. Your task is to clean up a messy school schedule raw text output " +
+                        "and convert it into a strictly formatted JSON array matching individual class items.\n\n" +
+                        "CRITICAL RULES:\n" +
+                        "1. If a single row contains multiple days (e.g. Day: 'Tuesday Friday', Schedule: '03:00PM-05:00PM'), " +
+                        "you MUST split them up into separate distinct objects for each day.\n" +
+                        "2. Keep day labels normalized to short text versions: 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'.\n" +
+                        "3. Match the room names relative to their line placement (e.g. if room states 'V-203 HSSH-203', map 'V-203' to the first day and 'HSSH-203' to the second day).\n" +
+                        "4. Return ONLY a valid JSON code block array, no markdown wrappers outside of ```json.\n\n" +
+                        "Expected JSON Output Structure:\n" +
+                        "[\n" +
+                        "  {\n" +
+                        "    \"day\": \"Tue\",\n" +
+                        "    \"time\": \"03:00PM - 05:00PM\",\n" +
+                        "    \"subject\": \"Business Process\",\n" +
+                        "    \"subjectCode\": \"BUSPROS\",\n" +
+                        "    \"section\": \"BSIT251B\",\n" +
+                        "    \"room\": \"V-203\",\n" +
+                        "    \"instructor\": \"Allainer C. Reyes\",\n" +
+                        "    \"status\": \"Enrolled\",\n" +
+                        "    \"units\": \"3.0\"\n" +
+                        "  }\n" +
+                        "]\n\n" +
+                        "Here is the raw text content to extract:\n" + rawExtractedText;
+
+        Content contentPrompt = new Content.Builder().addText(structuredPrompt).build();
+
+        // 3. Execute Async call to the LLM backend
+        ListenableFuture<GenerateContentResponse> responseFuture = modelFutures.generateContent(contentPrompt);
+
+        Futures.addCallback(responseFuture, new FutureCallback<GenerateContentResponse>() {
+            @Override
+            public void onSuccess(GenerateContentResponse result) {
+                String rawJson = result.getText();
+                if (rawJson != null) {
+                    // Clean markdown artifacts if present
+                    String cleanJson = rawJson.replace("```json", "").replace("```", "").trim();
+
+                    runOnUiThread(() -> {
+                        try {
+                            // Parse JSON String directly into your existing Model array using Gson
+                            Gson gson = new Gson();
+                            Type listType = new TypeToken<ArrayList<ScheduleItem>>(){}.getType();
+                            List<ScheduleItem> parsedItems = gson.fromJson(cleanJson, listType);
+
+                            if (parsedItems != null && !parsedItems.isEmpty()) {
+                                // Assign transient runtime class fields like Class Mode based on Room
+                                for (ScheduleItem item : parsedItems) {
+                                    item.classMode = getClassMode(item.room);
+                                }
+                                // Pass directly to verification screen
+                                startEditActivity(parsedItems);
+                            } else {
+                                Toast.makeText(MainActivity.this, "Failed to build schedule from layout context.", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Log.e("GEMINI_PARSE_ERROR", "JSON structural mismatch", e);
+                            Toast.makeText(MainActivity.this, "Data formatting error occurred.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Throwable t) {
+                runOnUiThread(() -> {
+                    Log.e("GEMINI_API_ERROR", "Call failed", t);
+                    Toast.makeText(MainActivity.this, "API Connection Failure: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void handleExtractedText(String text) {
+        if (isNetworkAvailable()) {
+            processTextWithGemini(text);
+        } else {
+            Toast.makeText(this, "Offline: Using local parser", Toast.LENGTH_SHORT).show();
+            processText(text);
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+        }
+        return false;
     }
 
     private void processText(String text) {

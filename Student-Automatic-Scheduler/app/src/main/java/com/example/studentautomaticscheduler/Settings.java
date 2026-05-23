@@ -36,8 +36,23 @@ public class Settings extends AppCompatActivity {
 
         setupCustomizeView();
         setupNotificationView();
+        setupAiConfig();
         setupHelpView();
         setupPersonalData();
+    }
+
+    private void setupAiConfig() {
+        com.google.android.material.textfield.TextInputEditText etApiKey = findViewById(R.id.etGeminiApiKey);
+        Button btnSaveKey = findViewById(R.id.btnSaveApiKey);
+
+        String savedKey = prefs.getString("user_gemini_api_key", "");
+        etApiKey.setText(savedKey);
+
+        btnSaveKey.setOnClickListener(v -> {
+            String key = etApiKey.getText().toString().trim();
+            prefs.edit().putString("user_gemini_api_key", key).apply();
+            Toast.makeText(this, "API Key saved", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void setupCustomizeView() {
@@ -52,15 +67,6 @@ public class Settings extends AppCompatActivity {
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
             }
-        });
-
-        // Color Blind Setup
-        SwitchCompat switchColorBlind = findViewById(R.id.switchColorBlind);
-        boolean isColorBlind = prefs.getBoolean("color_blind_mode", false);
-        switchColorBlind.setChecked(isColorBlind);
-        switchColorBlind.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.edit().putBoolean("color_blind_mode", isChecked).apply();
-            Toast.makeText(this, "Theme style updated. Restart app to apply completely.", Toast.LENGTH_SHORT).show();
         });
 
         // Default Calendar View Dropdown
