@@ -140,6 +140,7 @@ public class Settings extends AppCompatActivity {
                     .setMessage("Are you sure you want to delete all schedule data?")
                     .setPositiveButton("Yes", (dialog, which) -> {
                         try {
+                            NotificationHelper.cancelAllReminders(this);
                             DatabaseHelper db = new DatabaseHelper(this);
                             db.getWritableDatabase().delete("schedule", null, null);
                             Toast.makeText(this, "All data cleared", Toast.LENGTH_SHORT).show();

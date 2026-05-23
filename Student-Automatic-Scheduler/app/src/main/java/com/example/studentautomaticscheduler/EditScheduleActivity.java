@@ -56,6 +56,7 @@ public class EditScheduleActivity extends AppCompatActivity {
     }
 
     private void saveAll() {
+        NotificationHelper.cancelAllReminders(this);
         DatabaseHelper db = new DatabaseHelper(this);
         boolean singleEdit = getIntent().getBooleanExtra("SINGLE_EDIT_MODE", false);
 

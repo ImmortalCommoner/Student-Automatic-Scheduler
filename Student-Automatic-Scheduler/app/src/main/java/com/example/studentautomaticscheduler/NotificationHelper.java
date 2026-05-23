@@ -31,17 +31,26 @@ public class NotificationHelper {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
         for (ScheduleItem item : schedules) {
-            Intent intent = new Intent(context, NotificationReceiver.class);
-            int notificationId = (item.subject + item.day + item.time).hashCode();
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    notificationId,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-            if (alarmManager != null) {
-                alarmManager.cancel(pendingIntent);
-            }
+            cancelReminder(context, alarmManager, item);
+        }
+    }
+
+    public static void cancelReminder(Context context, ScheduleItem item) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        cancelReminder(context, alarmManager, item);
+    }
+
+    public static void cancelReminder(Context context, AlarmManager alarmManager, ScheduleItem item) {
+        Intent intent = new Intent(context, NotificationReceiver.class);
+        int notificationId = (item.subject + item.day + item.time).hashCode();
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        if (alarmManager != null) {
+            alarmManager.cancel(pendingIntent);
         }
     }
 

@@ -72,6 +72,7 @@ public class DayFragment extends Fragment implements ScheduleAdapter.OnItemActio
 
     private void deleteItem(int position) {
         ScheduleItem item = list.get(position);
+        NotificationHelper.cancelReminder(getContext(), item);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
                 DatabaseHelper.TABLE_SCHEDULE,

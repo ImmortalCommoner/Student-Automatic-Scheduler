@@ -209,6 +209,7 @@ public class MonthFragment extends Fragment implements ScheduleAdapter.OnItemAct
 
     private void deleteItem(int position) {
         ScheduleItem item = list.get(position);
+        NotificationHelper.cancelReminder(requireContext(), item);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
                 DatabaseHelper.TABLE_SCHEDULE,

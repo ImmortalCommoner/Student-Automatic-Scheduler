@@ -126,6 +126,7 @@ public class WeekFragment extends Fragment {
     }
 
     private void deleteItem(ScheduleItem item) {
+        NotificationHelper.cancelReminder(requireContext(), item);
         DatabaseHelper db = new DatabaseHelper(getContext());
         db.getWritableDatabase().delete(
                 DatabaseHelper.TABLE_SCHEDULE,
