@@ -9,7 +9,6 @@ import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PICK_IMAGE = 102;
     private static final int CAMERA_PERMISSION_CODE = 103;
     private static final int NOTIFICATION_PERMISSION_CODE = 104;
+    private static final int EXPORT_PDF = 105;
     private static final String TAG = "PDF_PARSER";
     private SQLiteDatabase db;
 
@@ -86,21 +86,15 @@ public class MainActivity extends AppCompatActivity {
             loadDefaultFragment();
         }
 
-        Button btnUpload = findViewById(R.id.btnUploadSchedule);
-        btnUpload.setOnClickListener(v -> showUploadOptions());
+        // Bottom Action Buttons
+        findViewById(R.id.btnExport).setOnClickListener(v -> exportSchedule());
+        findViewById(R.id.btnUpload).setOnClickListener(v -> showUploadOptions());
+        findViewById(R.id.btnAdd).setOnClickListener(v -> openManualAdd());
 
         findViewById(R.id.btnSettings).setOnClickListener(v -> {
             startActivity(new Intent(this, Settings.class));
         });
 
-        findViewById(R.id.btnAddManual).setOnClickListener(v -> {
-            ArrayList<ScheduleItem> emptyList = new ArrayList<>();
-            emptyList.add(new ScheduleItem("", "", "", "", "", "", "", "", ""));
-            Intent intent = new Intent(this, EditScheduleActivity.class);
-            intent.putExtra("SCHEDULE_ITEMS", emptyList);
-            intent.putExtra("SINGLE_EDIT_MODE", true);
-            startActivity(intent);
-        });
 
         // Initialize Database
         ReferenceDatabaseHelper refDb = new ReferenceDatabaseHelper(this);
@@ -248,8 +242,37 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else if (requestCode == PICK_IMAGE) {
                 processImageFromUri(data.getData());
+            } else if (requestCode == EXPORT_PDF) {
+                performPdfExport(data.getData());
             }
         }
+    }
+
+    private void exportSchedule() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        intent.putExtra(Intent.EXTRA_TITLE, "My_Schedule.pdf");
+        startActivityForResult(intent, EXPORT_PDF);
+    }
+
+    private void performPdfExport(Uri uri) {
+        DatabaseHelper dbHelper = new DatabaseHelper(this);
+        List<ScheduleItem> allSchedules = dbHelper.getAllSchedules();
+        if (PdfExportHelper.exportToPdf(this, uri, allSchedules)) {
+            Toast.makeText(this, "Schedule exported successfully!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Failed to export schedule.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openManualAdd() {
+        ArrayList<ScheduleItem> emptyList = new ArrayList<>();
+        emptyList.add(new ScheduleItem("", "", "", "", "", "", "", "", ""));
+        Intent intent = new Intent(this, EditScheduleActivity.class);
+        intent.putExtra("SCHEDULE_ITEMS", emptyList);
+        intent.putExtra("SINGLE_EDIT_MODE", true);
+        startActivity(intent);
     }
 
     private void processImageFromUri(Uri uri) {
@@ -316,8 +339,10 @@ public class MainActivity extends AppCompatActivity {
                         "1. If a single row contains multiple days (e.g. Day: 'Tuesday Friday', Schedule: '03:00PM-05:00PM'), " +
                         "you MUST split them up into separate distinct objects for each day.\n" +
                         "2. Keep day labels normalized to short text versions: 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'.\n" +
-                        "3. Match the room names relative to their line placement (e.g. if room states 'V-203 HSSH-203', map 'V-203' to the first day and 'HSSH-203' to the second day).\n" +
-                        "4. Return ONLY a valid JSON code block array, no markdown wrappers outside of ```json.\n\n" +
+                        "3. Interpret abbreviations correctly: M=Mon, T=Tue, W=Wed, TH=Thu, F=Fri, S=Sat, TF=Tue & Fri, MTH=Mon & Thu, TTH=Tue & Thu.\n" +
+                        "4. Match the room names relative to their line placement (e.g. if room states 'V-203 HSSH-203', map 'V-203' to the first day and 'HSSH-203' to the second day).\n" +
+                        "5. If a field like 'instructor' is missing or labeled 'TBA', leave it as an empty string.\n" +
+                        "6. Return ONLY a valid JSON code block array, no markdown wrappers outside of ```json.\n\n" +
                         "Expected JSON Output Structure:\n" +
                         "[\n" +
                         "  {\n" +
@@ -355,12 +380,35 @@ public class MainActivity extends AppCompatActivity {
                             List<ScheduleItem> parsedItems = gson.fromJson(cleanJson, listType);
 
                             if (parsedItems != null && !parsedItems.isEmpty()) {
-                                // Assign transient runtime class fields like Class Mode based on Room
+                                List<ScheduleItem> finalItems = new ArrayList<>();
+                                List<String> processedKeys = new ArrayList<>();
+
                                 for (ScheduleItem item : parsedItems) {
-                                    item.classMode = getClassMode(item.room);
+                                    // Handle duplicates if AI splits them but we want to look up in DB
+                                    String key = item.subjectCode + "|" + item.section;
+                                    if (processedKeys.contains(key)) continue;
+                                    processedKeys.add(key);
+
+                                    // Review Reference Database to enrich or correct AI data
+                                    List<ScheduleItem> dbItems = queryReference(item.subjectCode, item.section);
+                                    if (!dbItems.isEmpty()) {
+                                        for (ScheduleItem dbi : dbItems) {
+                                            // Prefer AI for instructor if DB is empty
+                                            if (dbi.instructor == null || dbi.instructor.isEmpty()) dbi.instructor = item.instructor;
+                                            // Prefer DB for other details, but keep AI description if DB is missing it
+                                            if (dbi.subject == null || dbi.subject.isEmpty()) dbi.subject = item.subject;
+                                            
+                                            dbi.classMode = getClassMode(dbi.room);
+                                            finalItems.add(dbi);
+                                        }
+                                    } else {
+                                        // No DB match, use AI result directly
+                                        item.classMode = getClassMode(item.room);
+                                        finalItems.add(item);
+                                    }
                                 }
-                                // Pass directly to verification screen
-                                startEditActivity(parsedItems);
+                                // Pass to verification screen
+                                startEditActivity(finalItems);
                             } else {
                                 Toast.makeText(MainActivity.this, "Failed to build schedule from layout context.", Toast.LENGTH_SHORT).show();
                             }
@@ -410,7 +458,7 @@ public class MainActivity extends AppCompatActivity {
         List<ScheduleItem> parsedItems = new ArrayList<>();
         String[] lines = text.split("\\r?\\n");
         
-        String dayRegex = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)";
+        String dayRegex = "(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun|MTH|TF|WS|TTH|MWF|TH|\\b[MTWFS]\\b)";
         String timeRegex = "(\\d{1,2}:\\d{2}\\s*[AP]M\\s*-\\s*\\d{1,2}:\\d{2}\\s*[AP]M)";
         String sectionRegex = "([A-Z]{2,}\\d{2,}[A-Z]?)";
         String unitsRegex = "(\\d\\.\\d)";
@@ -489,7 +537,7 @@ public class MainActivity extends AppCompatActivity {
                         if (!before.isEmpty() && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(before).find()) {
                             currentSubjDesc = (currentSubjDesc + " " + before).trim();
                         }
-                    } else if (!line.matches(".*" + timeRegex + ".*") && !line.contains("Enrolled") && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(line).find()) {
+                    } else if (!line.matches(".*" + timeRegex + ".*") && !line.contains("Enrolled") && !line.contains("Registered") && !Pattern.compile(dayRegex, Pattern.CASE_INSENSITIVE).matcher(line).find()) {
                         if (!line.matches("^[A-Z0-9]{3,8}\\s+.*") && !upper.contains("SUBJECT") && !upper.contains("SECTION")
                             && !upper.contains("ROOM") && !upper.contains("INSTRUCTOR") && !upper.contains("STATUS") && !upper.contains("UNITS")) {
                             currentSubjDesc = (currentSubjDesc + " " + line).trim();
@@ -498,25 +546,33 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 Matcher dm = Pattern.compile(dayRegex).matcher(line);
-                while (dm.find()) bDays.add(dm.group(1));
+                while (dm.find()) {
+                    String matched = dm.group(1);
+                    List<String> expanded = expandDayAbbreviation(matched);
+                    if (!expanded.isEmpty()) bDays.addAll(expanded);
+                    else bDays.add(matched);
+                }
 
                 Matcher tm = Pattern.compile(timeRegex).matcher(line);
                 while (tm.find()) {
                     bTimes.add(tm.group(1));
                     String after = line.substring(tm.end()).trim();
                     if (after.length() > 2) {
-                        String[] enrolledParts = after.split("Enrolled");
-                        if (enrolledParts.length > 0) {
-                            String roomCandidate = enrolledParts[0];
-                            String[] unitParts = roomCandidate.split("\\d\\.\\d");
-                            if (unitParts.length > 0) {
-                                roomCandidate = unitParts[0].trim();
-                            }
-                            if (!roomCandidate.isEmpty() && !Pattern.compile(dayRegex).matcher(roomCandidate).find()
-                                && !roomCandidate.equalsIgnoreCase("Room") && !roomCandidate.equalsIgnoreCase("Instructor")
-                                && !roomCandidate.equalsIgnoreCase("Schedule") && !roomCandidate.equalsIgnoreCase("Status")
-                                && !roomCandidate.equalsIgnoreCase("Units")) {
-                                bRooms.add(roomCandidate);
+                        String statusKeyword = after.contains("Enrolled") ? "Enrolled" : (after.contains("Registered") ? "Registered" : null);
+                        if (statusKeyword != null) {
+                            String[] statusParts = after.split(statusKeyword);
+                            if (statusParts.length > 0) {
+                                String roomCandidate = statusParts[0];
+                                String[] unitParts = roomCandidate.split("\\d\\.\\d");
+                                if (unitParts.length > 0) {
+                                    roomCandidate = unitParts[0].trim();
+                                }
+                                if (!roomCandidate.isEmpty() && !Pattern.compile(dayRegex).matcher(roomCandidate).find()
+                                    && !roomCandidate.equalsIgnoreCase("Room") && !roomCandidate.equalsIgnoreCase("Instructor")
+                                    && !roomCandidate.equalsIgnoreCase("Schedule") && !roomCandidate.equalsIgnoreCase("Status")
+                                    && !roomCandidate.equalsIgnoreCase("Units")) {
+                                    bRooms.add(roomCandidate);
+                                }
                             }
                         }
                     }
@@ -524,7 +580,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (bTimes.size() > bRooms.size()) {
                     if (!line.matches(".*" + timeRegex + ".*") && !Pattern.compile(dayRegex).matcher(line).find()
-                        && !line.contains("Enrolled") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)
+                        && !line.contains("Enrolled") && !line.contains("Registered") && !line.matches("^[A-Z0-9]{3,8}\\s+.*") && !line.matches(sectionRegex)
                         && !line.equalsIgnoreCase("Room") && !line.equalsIgnoreCase("Instructor") && !line.equalsIgnoreCase("Units")
                         && !line.equalsIgnoreCase("Schedule") && !line.equalsIgnoreCase("Status")) {
                         bRooms.add(line);
@@ -532,11 +588,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            if (line.contains("Enrolled")) {
+            if (line.contains("Enrolled") || line.contains("Registered") || (subjectStarted && line.matches(".*\\d\\.\\d$"))) {
                 String instructor = "";
-                String[] enrolledParts = line.split("Enrolled");
-                if (enrolledParts.length > 0) {
-                    instructor = enrolledParts[0].trim();
+                String status = line.contains("Registered") ? "Registered" : "Enrolled";
+                String[] statusParts = line.split(status);
+                if (statusParts.length > 0) {
+                    instructor = statusParts[0].trim();
                 }
 
                 String units = "3.0";
@@ -548,6 +605,7 @@ public class MainActivity extends AppCompatActivity {
                     for (ScheduleItem dbi : dbItems) {
                         if (dbi.instructor == null || dbi.instructor.isEmpty()) dbi.instructor = instructor;
                         if (!currentSubjDesc.isEmpty()) dbi.subject = currentSubjDesc;
+                        dbi.status = status;
                         
                         // Check for duplicates before adding
                         boolean exists = false;
@@ -568,7 +626,7 @@ public class MainActivity extends AppCompatActivity {
                         String t = (k < bTimes.size()) ? bTimes.get(k) : (bTimes.isEmpty() ? "N/A" : bTimes.get(bTimes.size()-1));
                         String r = (k < bRooms.size()) ? bRooms.get(k) : "TBA";
 
-                        ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, "Enrolled", units);
+                        ScheduleItem newItem = new ScheduleItem(shortDay(d), t, currentSubjDesc, currentSubjCode, currentSection, r, instructor, status, units);
                         newItem.classMode = getClassMode(r);
 
                         // Check for duplicates before adding
@@ -633,6 +691,26 @@ public class MainActivity extends AppCompatActivity {
             case "sun": return "Sun";
             default: return day;
         }
+    }
+
+    private List<String> expandDayAbbreviation(String abbr) {
+        List<String> days = new ArrayList<>();
+        if (abbr == null) return days;
+        String upper = abbr.toUpperCase().trim();
+        switch (upper) {
+            case "MTH": days.add("Mon"); days.add("Thu"); break;
+            case "TF": days.add("Tue"); days.add("Fri"); break;
+            case "WS": days.add("Wed"); days.add("Sat"); break;
+            case "MWF": days.add("Mon"); days.add("Wed"); days.add("Fri"); break;
+            case "TTH": days.add("Tue"); days.add("Thu"); break;
+            case "M": days.add("Mon"); break;
+            case "T": days.add("Tue"); break;
+            case "W": days.add("Wed"); break;
+            case "F": days.add("Fri"); break;
+            case "S": days.add("Sat"); break;
+            case "TH": days.add("Thu"); break;
+        }
+        return days;
     }
 
 

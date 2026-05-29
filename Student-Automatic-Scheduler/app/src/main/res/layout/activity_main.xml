@@ -53,23 +53,6 @@
                 android:textColor="@color/text_primary"/>
         </LinearLayout>
 
-        <!-- Add Button -->
-        <ImageButton
-            android:id="@+id/btnAddManual"
-
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-
-            android:layout_marginEnd="4dp"
-
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Add Schedule"
-
-            android:padding="10dp"
-
-            android:src="@android:drawable/ic_input_add"
-
-            app:tint="@color/text_primary"/>
 
         <!-- Settings Button -->
         <ImageButton
@@ -194,24 +177,58 @@
 
     </FrameLayout>
 
-    <!-- Upload Button -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/btnUploadSchedule"
-
+    <!-- Action Buttons Row -->
+    <LinearLayout
+        android:id="@+id/actionButtonsContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
         android:layout_marginBottom="22dp"
-
-        android:text="Upload"
-        android:textAllCaps="false"
-
-        android:textColor="@android:color/white"
-
-        app:backgroundTint="@color/button_bg"
-
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Export Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExport"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Export"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/button_bg"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_save" />
+
+        <!-- Upload Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUpload"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Upload"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/button_bg"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_upload" />
+
+        <!-- Add Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAdd"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/button_bg"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_input_add" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
