@@ -326,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 1. Initialize the model using gemini-2.5-flash-lite
         GenerativeModel gm = new GenerativeModel(
-                "gemini-2.5-flash-lite",
+                "gemini-3.5-flash", // updated from "gemini-2.5-flash-lite"
                 userApiKey
         );
         GenerativeModelFutures modelFutures = GenerativeModelFutures.from(gm);
@@ -336,23 +336,33 @@ public class MainActivity extends AppCompatActivity {
                 "You are an expert data parsing assistant. Your task is to clean up a messy school schedule raw text output " +
                         "and convert it into a strictly formatted JSON array matching individual class items.\n\n" +
                         "CRITICAL RULES:\n" +
-                        "1. If a single row contains multiple days (e.g. Day: 'Tuesday Friday', Schedule: '03:00PM-05:00PM'), " +
-                        "you MUST split them up into separate distinct objects for each day.\n" +
+                        "1. **MANDATORY SPLITTING:** Every single day a class meets MUST be represented as a separate, distinct JSON object. If a row lists two days (e.g., 'Monday Thursday' or 'Tuesday Friday') and two corresponding times/rooms stacked on top of each other, you MUST split them into **two separate objects**—one for the first day/time/room and one for the second day/time/room.\n" +
                         "2. Keep day labels normalized to short text versions: 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'.\n" +
                         "3. Interpret abbreviations correctly: M=Mon, T=Tue, W=Wed, TH=Thu, F=Fri, S=Sat, TF=Tue & Fri, MTH=Mon & Thu, TTH=Tue & Thu.\n" +
-                        "4. Match the room names relative to their line placement (e.g. if room states 'V-203 HSSH-203', map 'V-203' to the first day and 'HSSH-203' to the second day).\n" +
+                        "4. Match the room and schedule lines relative to their vertical placement. For example, if the first line of room/schedule corresponds to the first day listed, map them together. If there is a second line, map them to the second day object.\n" +
                         "5. If a field like 'instructor' is missing or labeled 'TBA', leave it as an empty string.\n" +
                         "6. Return ONLY a valid JSON code block array, no markdown wrappers outside of ```json.\n\n" +
-                        "Expected JSON Output Structure:\n" +
+                        "Expected JSON Output Structure (Notice how multi-day rows become separate objects):\n" +
                         "[\n" +
                         "  {\n" +
-                        "    \"day\": \"Tue\",\n" +
-                        "    \"time\": \"03:00PM - 05:00PM\",\n" +
-                        "    \"subject\": \"Business Process\",\n" +
-                        "    \"subjectCode\": \"BUSPROS\",\n" +
+                        "    \"day\": \"Mon\",\n" +
+                        "    \"time\": \"07:00AM - 09:00AM\",\n" +
+                        "    \"subject\": \"CLOUD COMPUTING & VIRTUALIZATION\",\n" +
+                        "    \"subjectCode\": \"CLDCOMP\",\n" +
                         "    \"section\": \"BSIT251B\",\n" +
-                        "    \"room\": \"V-203\",\n" +
-                        "    \"instructor\": \"Allainer C. Reyes\",\n" +
+                        "    \"room\": \"VComLab-1\",\n" +
+                        "    \"instructor\": \"Richard L. Malabanan\",\n" +
+                        "    \"status\": \"Enrolled\",\n" +
+                        "    \"units\": \"3.0\"\n" +
+                        "  },\n" +
+                        "  {\n" +
+                        "    \"day\": \"Thu\",\n" +
+                        "    \"time\": \"07:00AM - 09:00AM\",\n" +
+                        "    \"subject\": \"CLOUD COMPUTING & VIRTUALIZATION\",\n" +
+                        "    \"subjectCode\": \"CLDCOMP\",\n" +
+                        "    \"section\": \"BSIT251B\",\n" +
+                        "    \"room\": \"ComLab 1\",\n" +
+                        "    \"instructor\": \"Richard L. Malabanan\",\n" +
                         "    \"status\": \"Enrolled\",\n" +
                         "    \"units\": \"3.0\"\n" +
                         "  }\n" +
@@ -384,28 +394,14 @@ public class MainActivity extends AppCompatActivity {
                                 List<String> processedKeys = new ArrayList<>();
 
                                 for (ScheduleItem item : parsedItems) {
-                                    // Handle duplicates if AI splits them but we want to look up in DB
-                                    String key = item.subjectCode + "|" + item.section;
+                                    // Include day in the key so multi-day classes (e.g. Mon & Thu) are not skipped as duplicates
+                                    String key = item.subjectCode + "|" + item.section + "|" + item.day;
                                     if (processedKeys.contains(key)) continue;
                                     processedKeys.add(key);
 
-                                    // Review Reference Database to enrich or correct AI data
-                                    List<ScheduleItem> dbItems = queryReference(item.subjectCode, item.section);
-                                    if (!dbItems.isEmpty()) {
-                                        for (ScheduleItem dbi : dbItems) {
-                                            // Prefer AI for instructor if DB is empty
-                                            if (dbi.instructor == null || dbi.instructor.isEmpty()) dbi.instructor = item.instructor;
-                                            // Prefer DB for other details, but keep AI description if DB is missing it
-                                            if (dbi.subject == null || dbi.subject.isEmpty()) dbi.subject = item.subject;
-                                            
-                                            dbi.classMode = getClassMode(dbi.room);
-                                            finalItems.add(dbi);
-                                        }
-                                    } else {
-                                        // No DB match, use AI result directly
-                                        item.classMode = getClassMode(item.room);
-                                        finalItems.add(item);
-                                    }
+                                    // Trust Gemini's parsed item directly (preserving the specific day, time, and room extracted from the image/PDF)
+                                    item.classMode = getClassMode(item.room);
+                                    finalItems.add(item);
                                 }
                                 // Pass to verification screen
                                 startEditActivity(finalItems);
